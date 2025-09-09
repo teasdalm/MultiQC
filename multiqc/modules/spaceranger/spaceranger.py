@@ -46,11 +46,7 @@ class MultiqcModule(BaseMultiqcModule):
                     """,
                     plot=self.spaceranger_transcript_table(data_by_sample))
        
-            
-    
-    
-    
-    def parse_spaceranger_metrics(self, f):
+     def parse_spaceranger_metrics(self, f):
         """Parse Space Ranger metrics_summary.csv file"""
         lines = f["f"].read().splitlines()
         if len(lines) < 2:
@@ -69,6 +65,7 @@ class MultiqcModule(BaseMultiqcModule):
 
         # Convert numeric fields
         numeric_fields = [
+            # visium hd
             "Number of Reads",
             "Valid Barcodes",
             "Valid UMI Sequences",	
@@ -114,8 +111,33 @@ class MultiqcModule(BaseMultiqcModule):
             "Median UMIs per Cell",
             "Median Cell Area (μm²)"
             "Median Nucleus Area (μm²)",
-            "Maximum Nucleus Diameter (pixels)"
+            "Maximum Nucleus Diameter (pixels)",
+            # visium SD
+            'Number of Spots Under Tissue',
+            'Number of Reads',
+            'Mean Reads per Spot',
+            'Mean Reads Under Tissue per Spot',
+            'Fraction of Spots Under Tissue',
+            'Median Genes per Spot',
+            'Median UMI Counts per Spot',
+            'Valid Barcodes',
+            'Valid UMIs',
+            'Sequencing Saturation',
+            'Q30 Bases in Barcode',
+            'Q30 Bases in RNA Read',
+            'Q30 Bases in UMI',
+            'Reads Mapped to Genome',
+            'Reads Mapped Confidently to Genome',
+            'Reads Mapped Confidently to Intergenic Regions',
+            'Reads Mapped Confidently to Intronic Regions',
+            'Reads Mapped Confidently to Exonic Regions',
+            'Reads Mapped Confidently to Transcriptome',
+            'Reads Mapped Antisense to Gene',
+            'Fraction Reads in Spots Under Tissue',
+            'Total Genes Detected'
         ]
+        # do duplicates even matter? idk
+        #numeric_fields = list(set(numeric_fields))
 
         parsed_metrics = {}
         for field in numeric_fields:
