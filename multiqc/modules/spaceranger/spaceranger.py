@@ -36,32 +36,7 @@ class MultiqcModule(BaseMultiqcModule):
         log.info(f"Found {len(data_by_sample)} Space Ranger reports")
         self.write_data_file(data_by_sample, "multiqc_spaceranger")
         self.spaceranger_general_stats_table(data_by_sample)
-
-        headers: Dict[str, Dict[str, Any]] = {
-            "Number of Reads": {
-                "title": "Number of Reads",
-                "description": "Total number of reads sequenced",
-                "scale": "YlOrRd",
-                "format": "{:,.0f}",
-            },
-             "Reads Mapped to Probe Set": {
-                "title": "Reads Mapped to Probe Set",
-                "description": "Reads Mapped to Probe Set",
-                "scale": "YlOrRd",
-            },
-             "Number of Genes": {
-                "title": "Number of Genes",
-                "description": "Number of Genes",
-                "scale": "YlOrRd",
-            },
-             "Estimated UMIs from Genomic DNA": {
-                "title": "Estimated UMIs from Genomic DNA",
-                "description": "Estimated UMIs from Genomic DNA",
-                "scale": "YlOrRd",
-                "format": "{:,.0f}",
-            },
-            }
-
+        
         self.add_section(
                     name="Table",
                     anchor="Table",
@@ -69,14 +44,8 @@ class MultiqcModule(BaseMultiqcModule):
                     helptext="""
                     XXX
                     """,
-                    plot=table.plot(
-                                    data_by_sample,
-                                    headers,
-                                    pconfig=TableConfig(
-                                        id="Space Ranger table",
-                                        title="Space Ranger table: Data Quality",
-                                    ))
-        )
+                    plot=self.spaceranger_transcript_table(data_by_sample))
+       
             
     
     
@@ -181,15 +150,9 @@ class MultiqcModule(BaseMultiqcModule):
                 "scale": "",
                 "format": "{:,.2f}",
             },
-             "Number of Genes": {
-                "title": "Number of Genes",
-                "description": "Number of Genes",
-                "scale": "",
-                "format": "{:,.0f}",
-            },
-             "Estimated UMIs from Genomic DNA": {
-                "title": "Estimated UMIs from Genomic DNA",
-                "description": "Estimated UMIs from Genomic DNA",
+             "Genes Detected": {
+                "title": "Genes Detected",
+                "description": "Genes Detected",
                 "scale": "",
                 "format": "{:,.0f}",
             },
@@ -226,3 +189,56 @@ class MultiqcModule(BaseMultiqcModule):
         }
         
         self.general_stats_addcols(data_by_sample, headers)
+
+    def spaceranger_transcript_table(self, data_by_sample):
+        headers: Dict[str, Dict[str, Any]] = {
+            "Number of Reads": {
+                "title": "Number of Reads",
+                "description": "Total number of reads sequenced",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+             "Reads Mapped to Probe Set": {
+                "title": "Reads Mapped to Probe Set",
+                "description": "Reads Mapped to Probe Set",
+                "scale": "",
+                "format": "{:,.2f}",
+            },
+             "Genes Detected": {
+                "title": "Genes Detected",
+                "description": "Genes Detected",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Reads in Squares Under Tissue": {
+                "title": "Reads in Squares Under Tissue",
+                "description": "Reads in Squares Under Tissue",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Mean Genes Under Tissue per Square 2 µm": {
+                "title": "Mean Genes Under Tissue per Square 2 µm",
+                "description": "Mean Genes Under Tissue per Square 2 µm",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Mean Genes Under Tissue per Bin 8 µm": {
+                "title": "Mean Genes Under Tissue per Bin 8 µm",
+                "description": "Mean Genes Under Tissue per Bin 8 µm",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Mean Genes Under Tissue per Bin 16 µm": {
+                "title": "Mean Genes Under Tissue per Bin 16 µm",
+                "description": "Mean Genes Under Tissue per Bin 16 µm",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Median Genes per Cell": {
+                "title": "Median Genes per Cell",
+                "description": "Median Genes per Cell",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+        }
+        return table.plot(data_by_sample,headers,pconfig=TableConfig(id="Space Ranger table",title="Space Ranger table: Data Quality"))
