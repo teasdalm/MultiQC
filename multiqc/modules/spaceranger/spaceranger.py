@@ -19,9 +19,8 @@ class MultiqcModule(BaseMultiqcModule):
         super(MultiqcModule, self).__init__(
             name="Space Ranger",
             anchor="spaceranger",
-            href=["XXX"],
-            info="XXX",
-            doi=["XX"],
+            href=["https://www.10xgenomics.com/support/software/space-ranger/latest"],
+            info="Space Ranger is a set of analysis pipelines that process 10x Genomics Visium data with brightfield or fluorescence microscope images, allowing users to map the whole transcriptome in a variety of tissues",
         )
 
         data_by_sample = {}
@@ -38,13 +37,58 @@ class MultiqcModule(BaseMultiqcModule):
         self.spaceranger_general_stats_table(data_by_sample)
         
         self.add_section(
-                    name="Table",
+                    name="Analysis results",
                     anchor="Table",
-                    description="XXX",
+                    description="Summary Stats from Space Ranger run",
                     helptext="""
-                    XXX
+                    Summary Stats from Space Ranger run
                     """,
                     plot=self.spaceranger_transcript_table(data_by_sample))
+ 
+        self.add_section(
+                    name="Sequencing Saturation",
+                    anchor="Sequencing Saturation",
+                    description="Plot of sequencing saturation",
+                    helptext="""
+                    Plot of sequencing saturation
+                    """,
+                    plot=self.add_set_sat_plot(data_by_sample))
+ 
+        self.add_section(
+                    name="Genes detected",
+                    anchor="Plot",
+                    description="Plot of Genes detected in differing sized bins",
+                    helptext="""
+                    Plot of Genes detected in differing sized bins
+                    """,
+                    plot=self.add_gene_number_plot(data_by_sample))
+     
+     
+    def add_set_sat_plot(self, data_by_sample):
+        config = {"ylab": "Sequencing Saturation (%)"}
+        
+        config["id"] = "Space Ranger Sequencing Saturation plot"
+        config["title"] = "Space Ranger: Saturation plot"
+        
+        genes_detected = {
+            "Sequencing Saturation": {"color": "#f7a35c", "name": "Sequencing Saturation"}
+            }
+        return(bargraph.plot(data_by_sample, genes_detected, config))
+    
+    
+    
+    def add_gene_number_plot(self, data_by_sample):
+        config = {"ylab": "Genes detected by bin size"}
+        config["id"] = "Space Ranger: Genes detected by bin size"
+        config["title"] = "Space Ranger: Genes detected by bin size - beta"
+        genes_detected = {
+            "Mean Genes Under Tissue per Square 2 µm": {"color": "#20568f", "name": "Mean Genes Under Tissue per Square 2 µm"},
+            "Mean Genes Under Tissue per Bin 8 µm": {"color": "#f7a35c", "name": "Mean Genes Under Tissue per Bin 8 µm"},
+            "Mean Genes Under Tissue per Bin 16 µm": {"color": "#981919", "name": "Mean Genes Under Tissue per Bin 16 µm"}
+            }
+        
+        return(bargraph.plot(data_by_sample, genes_detected, config))
+    
        
     def parse_spaceranger_metrics(self, f):
         """Parse Space Ranger metrics_summary.csv file"""
@@ -135,6 +179,12 @@ class MultiqcModule(BaseMultiqcModule):
             'Reads Mapped Antisense to Gene',
             'Fraction Reads in Spots Under Tissue',
             'Total Genes Detected'
+            # some Visium3'
+            'Reads Mapped to Genome',
+            'Reads Mapped Confidently to Genome',
+            'Reads Mapped Confidently to Intergenic Regions',
+            'Reads Mapped Confidently to Intronic Regions',
+            'Reads Mapped Confidently to Exonic Regions'
         ]
         # do duplicates even matter? idk
         #numeric_fields = list(set(numeric_fields))
@@ -154,7 +204,9 @@ class MultiqcModule(BaseMultiqcModule):
         for field in string_fields:
             if field in metrics:
                 parsed_metrics[field] = metrics[field]
-
+                
+        
+        parsed_metrics["Sequencing Saturation"] = parsed_metrics["Sequencing Saturation"] * 100
         return parsed_metrics
 
     def spaceranger_general_stats_table(self, data_by_sample):
@@ -163,61 +215,66 @@ class MultiqcModule(BaseMultiqcModule):
             "Number of Reads": {
                 "title": "Number of Reads",
                 "description": "Total number of reads sequenced",
-                "scale": "",
+                "scale": "Blues",
                 "format": "{:,.0f}",
             },
              "Reads Mapped to Probe Set": {
                 "title": "Reads Mapped to Probe Set",
                 "description": "Reads Mapped to Probe Set",
-                "scale": "",
+                "scale": "Purples",
                 "format": "{:,.2f}",
             },
-             "Genes Detected": {
+             "Reads Mapped to Genome": {
+                "title": "Reads Mapped to Genome",
+                "description": "Reads Mapped to Genome",
+                "scale": "Purples",
+                "format": "{:,.2f}",
+             },"Genes Detected": {
                 "title": "Genes Detected",
                 "description": "Genes Detected",
-                "scale": "",
+                "scale": "YlOrRd",
                 "format": "{:,.0f}",
             },
             "Number of Spots Under Tissue": {
                 "title": "Number of Spots Under Tissue",
                 "description": "Number of Spots Under Tissue",
-                "scale": "YlOrRd",
+                "scale": "Greens",
                 "format": "{:,.2f}",
             },
             "Median Genes per Spot": {
                 "title": "Median Genes per Spot",
                 "description": "Median Genes per Spot",
-                "scale": "YlOrRd",
+                "scale": "Blues",
                 "format": "{:,.2f}",
             },
             "Reads in Squares Under Tissue": {
                 "title": "Reads in Squares Under Tissue",
                 "description": "Reads in Squares Under Tissue",
-                "scale": "",
+                "scale": "Blues",
                 "format": "{:,.0f}",
             },
             "Mean Genes Under Tissue per Square 2 µm": {
                 "title": "Mean Genes Under Tissue per Square 2 µm",
                 "description": "Mean Genes Under Tissue per Square 2 µm",
-                "scale": "",
+                "scale": "Greens",
                 "format": "{:,.0f}",
             },
             "Mean Genes Under Tissue per Bin 8 µm": {
                 "title": "Mean Genes Under Tissue per Bin 8 µm",
                 "description": "Mean Genes Under Tissue per Bin 8 µm",
-                "scale": "",
+                "scale": "Blues",
                 "format": "{:,.0f}",
             },
             "Mean Genes Under Tissue per Bin 16 µm": {
                 "title": "Mean Genes Under Tissue per Bin 16 µm",
                 "description": "Mean Genes Under Tissue per Bin 16 µm",
-                "scale": "",
+                "scale": "Greens",
                 "format": "{:,.0f}",
             },
             "Median Genes per Cell": {
                 "title": "Median Genes per Cell",
                 "description": "Median Genes per Cell",
-                "scale": "",
+                "scale": "Blues",
                 "format": "{:,.0f}",
             },
         }
@@ -231,26 +288,11 @@ class MultiqcModule(BaseMultiqcModule):
                 "description": "Total number of reads sequenced",
                 "scale": "",
                 "format": "{:,.0f}",
-            },"Valid Barcodes": {
-                "title": "Valid Barcodes",
-                "description": "Valid Barcodes",
-                "scale": "",
-                "format": "{:,.2f}",
-            },"Valid UMI Sequences": {
-                "title": "Valid UMI Sequences",
-                "description": "Valid UMI Sequences",
-                "scale": "",
-                "format": "{:,.2f}",
             },"Sequencing Saturation": {
                 "title": "Sequencing Saturation",
                 "description": "Sequencing Saturation",
                 "scale": "",
-                "format": "{:,.2f}",
-            },"Reads Mapped to Probe Set": {
-                "title": "XXX",
-                "description": "XXX",
-                "scale": "",
-                "format": "{:,.2f}",
+                "format": "{:.2f}%",
             },"Reads Mapped to Probe Set": {
                 "title": "Reads Mapped to Probe Set",
                 "description": "Reads Mapped to Probe Set",
@@ -264,6 +306,21 @@ class MultiqcModule(BaseMultiqcModule):
             },"Reads Mapped Confidently to the Filtered Probe Set": {
                 "title": "Reads Mapped Confidently to the Filtered Probe Set",
                 "description": "Reads Mapped Confidently to the Filtered Probe Set",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Reads Mapped to Genome": {
+                "title": "Reads Mapped to Genome",
+                "description": "Reads Mapped to Genome",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Reads Mapped Confidently to Genome": {
+                "title": "Reads Mapped Confidently to Genome",
+                "description": "Reads Mapped Confidently to Genome",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Reads Mapped Confidently to Exonic Regions": {
+                "title": "Reads Mapped Confidently to Exonic Regions",
+                "description": "Reads Mapped Confidently to Exonic Regions",
                 "scale": "",
                 "format": "{:,.2f}",
             },"Genes Detected": {
@@ -280,7 +337,7 @@ class MultiqcModule(BaseMultiqcModule):
                 "title": "Fraction Reads in Squares Under Tissue",
                 "description": "Fraction Reads in Squares Under Tissue",
                 "scale": "",
-                "format": "{:,.0f}",
+                "format": "{:,.2f}",
             },
             "Mean Genes Under Tissue per Square 2 µm": {
                 "title": "Mean Genes Under Tissue per Square 2 µm",
@@ -309,13 +366,13 @@ class MultiqcModule(BaseMultiqcModule):
              "Number of Spots Under Tissue": {
                 "title": "Number of Spots Under Tissue",
                 "description": "Number of Spots Under Tissue",
-                "scale": "YlOrRd",
-                "format": "{:,.2f}",
+                "scale": "",
+                "format": "{:,.0f}",
             },
             "Median Genes per Spot": {
                 "title": "Median Genes per Spot",
                 "description": "Median Genes per Spot",
-                "scale": "YlOrRd",
+                "scale": "",
                 "format": "{:,.2f}",
             },
         }
