@@ -36,83 +36,7 @@ class MultiqcModule(BaseMultiqcModule):
         log.info(f"Found {len(data_by_sample)} Space Ranger reports")
         self.write_data_file(data_by_sample, "multiqc_spaceranger")
         self.spaceranger_general_stats_table(data_by_sample)
-
-        headers: Dict[str, Dict[str, Any]] = {
-            "Number of Reads": {
-                "title": "Number of Reads",
-                "description": "Total number of reads sequenced",
-                "scale": "YlOrRd",
-                "format": "{:,.2f}",
-            },
-            "Valid Barcodes": {
-                "title": "Valid Barcodes",
-                "description": "%Valid barcodes",
-                "scale": "YlOrRd",
-                "modify": lambda x: x * 100.0,
-                "format": "{:,.0f}%",
-            },
-            "Valid UMIs": {
-                "title": "Valid UMIs",
-                "description": "%Valid UMIs",
-                "scale": "YlOrRd",
-                "modify": lambda x: x * 100.0,
-                "format": "{:,.0f}%",
-            },
-             "Reads Mapped to Probe Set": {
-                "title": "Reads Mapped to Probe Set",
-                "description": "Reads Mapped to Probe Set",
-                "scale": "YlOrRd",
-            },
-             "Number of Genes": {
-                "title": "Number of Genes",
-                "description": "Number of Genes",
-                "scale": "YlOrRd",
-            },
-             "Estimated UMIs from Genomic DNA": {
-                "title": "Estimated UMIs from Genomic DNA",
-                "description": "Estimated UMIs from Genomic DNA",
-                "scale": "YlOrRd",
-                "format": "{:,.2f}",
-            },
-             "Number of Spots Under Tissue": {
-                "title": "Number of Spots Under Tissue",
-                "description": "Number of Spots Under Tissue",
-                "scale": "YlOrRd",
-                "format": "{:,.2f}",
-            },
-             "Median Genes per Spot": {
-                "title": "Median Genes per Spot",
-                "description": "Median Genes per Spot",
-                "scale": "YlOrRd",
-                "format": "{:,.2f}",
-            },
-             "Median Genes per Cell": {
-                "title": "Median Genes per Cell",
-                "description": "Median Genes per Cell",
-                "scale": "YlOrRd",
-                "format": "{:,.2f}",
-            }            ,
-             "Mean Genes Under Tissue per Square 2 µm": {
-                "title": "Mean Genes Under Tissue per Square 2 µm",
-                "description": "Mean Genes Under Tissue per Square 2 µm",
-                "scale": "YlOrRd",
-                "format": "{:,.2f}",
-            },
-             "Mean Genes Under Tissue per Bin 8 µm": {
-                "title": "Mean Genes Under Tissue per Bin 8 µm",
-                "description": "Mean Genes Under Tissue per Bin 8 µm",
-                "scale": "YlOrRd",
-                "format": "{:,.2f}",
-            },
-             "Mean Genes Under Tissue per Bin 16 µm": {
-                "title": "Mean Genes Under Tissue per Bin 16 µm",
-                "description": "Mean Genes Under Tissue per Bin 16 µm",
-                "scale": "YlOrRd",
-                "format": "{:,.2f}",
-            },
-
-            }
-
+        
         self.add_section(
                     name="Table",
                     anchor="Table",
@@ -120,15 +44,8 @@ class MultiqcModule(BaseMultiqcModule):
                     helptext="""
                     XXX
                     """,
-                    plot=table.plot(
-                                    data_by_sample,
-                                    headers,
-                                    pconfig=TableConfig(
-                                        id="Space Ranger table",
-                                        title="Space Ranger table: Data Quality",
-                                    ))
-        )
-            
+                    plot=self.spaceranger_transcript_table(data_by_sample))
+       
     def parse_spaceranger_metrics(self, f):
         """Parse Space Ranger metrics_summary.csv file"""
         lines = f["f"].read().splitlines()
@@ -246,66 +163,160 @@ class MultiqcModule(BaseMultiqcModule):
             "Number of Reads": {
                 "title": "Number of Reads",
                 "description": "Total number of reads sequenced",
-                "scale": "YlOrRd",
+                "scale": "",
                 "format": "{:,.0f}",
             },
              "Reads Mapped to Probe Set": {
                 "title": "Reads Mapped to Probe Set",
                 "description": "Reads Mapped to Probe Set",
+                "scale": "",
+                "format": "{:,.2f}",
+            },
+             "Genes Detected": {
+                "title": "Genes Detected",
+                "description": "Genes Detected",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Number of Spots Under Tissue": {
+                "title": "Number of Spots Under Tissue",
+                "description": "Number of Spots Under Tissue",
                 "scale": "YlOrRd",
                 "format": "{:,.2f}",
             },
-             "Number of Genes": {
-                "title": "Number of Genes",
-                "description": "Number of Genes",
+            "Median Genes per Spot": {
+                "title": "Median Genes per Spot",
+                "description": "Median Genes per Spot",
                 "scale": "YlOrRd",
-                "format": "{:,.0f}"
-            }
-            }
-        self.general_stats_addcols(data_by_sample, headers)
-"""            ,
-            "fraction_transcripts_assigned": {
-                "title": "Transcripts Assigned",
-                "description": "Fraction of transcripts assigned to cells",
-                "suffix": "%",
-                "scale": "RdYlGn",
-                "modify": lambda x: x * 100.0,
-                "max": 100.0,
+                "format": "{:,.2f}",
             },
-            "median_genes_cell": {
-                "title": "Genes/Cell",
-                "description": "Median number of genes per cell",
-                "scale": "Purples",
+            "Reads in Squares Under Tissue": {
+                "title": "Reads in Squares Under Tissue",
+                "description": "Reads in Squares Under Tissue",
+                "scale": "",
                 "format": "{:,.0f}",
             },
-            "fraction_transcripts_decoded_q20": {
-                "title": "Q20+ Transcripts",
-                "description": "Fraction of transcripts decoded with Q20+",
-                "suffix": "%",
-                "scale": "Greens",
-                "modify": lambda x: x * 100.0,
-                "max": 100.0,
+            "Mean Genes Under Tissue per Square 2 µm": {
+                "title": "Mean Genes Under Tissue per Square 2 µm",
+                "description": "Mean Genes Under Tissue per Square 2 µm",
+                "scale": "",
+                "format": "{:,.0f}",
             },
-            "cell_area_median": {
-                "title": "Median Cell",
-                "description": "Median cell area",
-                "suffix": " μm²",
-                "scale": "Blues",
-                "format": "{:,.1f}",
-                "shared_key": "xenium_cell_area",
+            "Mean Genes Under Tissue per Bin 8 µm": {
+                "title": "Mean Genes Under Tissue per Bin 8 µm",
+                "description": "Mean Genes Under Tissue per Bin 8 µm",
+                "scale": "",
+                "format": "{:,.0f}",
             },
-            "nucleus_area_median": {
-                "title": "Median Nucleus",
-                "description": "Median nucleus area",
-                "suffix": " μm²",
-                "scale": "Oranges",
-                "format": "{:,.1f}",
-                "shared_key": "xenium_cell_area",
+            "Mean Genes Under Tissue per Bin 16 µm": {
+                "title": "Mean Genes Under Tissue per Bin 16 µm",
+                "description": "Mean Genes Under Tissue per Bin 16 µm",
+                "scale": "",
+                "format": "{:,.0f}",
             },
-            "nucleus_to_cell_area_ratio_median": {
-                "title": "Nucleus/Cell",
-                "description": "Median nucleus to cell area ratio",
-                "scale": "Greens",
-                "format": "{:.3f}",
-                "max": 1.0,
-            }, """
+            "Median Genes per Cell": {
+                "title": "Median Genes per Cell",
+                "description": "Median Genes per Cell",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+        }
+        
+        self.general_stats_addcols(data_by_sample, headers)
+
+    def spaceranger_transcript_table(self, data_by_sample):
+        headers: Dict[str, Dict[str, Any]] = {
+            "Number of Reads": {
+                "title": "Number of Reads",
+                "description": "Total number of reads sequenced",
+                "scale": "",
+                "format": "{:,.0f}",
+            },"Valid Barcodes": {
+                "title": "Valid Barcodes",
+                "description": "Valid Barcodes",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Valid UMI Sequences": {
+                "title": "Valid UMI Sequences",
+                "description": "Valid UMI Sequences",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Sequencing Saturation": {
+                "title": "Sequencing Saturation",
+                "description": "Sequencing Saturation",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Reads Mapped to Probe Set": {
+                "title": "XXX",
+                "description": "XXX",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Reads Mapped to Probe Set": {
+                "title": "Reads Mapped to Probe Set",
+                "description": "Reads Mapped to Probe Set",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Reads Mapped Confidently to Probe Set": {
+                "title": "Reads Mapped Confidently to Probe Set",
+                "description": "Reads Mapped Confidently to Probe Set",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Reads Mapped Confidently to the Filtered Probe Set": {
+                "title": "Reads Mapped Confidently to the Filtered Probe Set",
+                "description": "Reads Mapped Confidently to the Filtered Probe Set",
+                "scale": "",
+                "format": "{:,.2f}",
+            },"Genes Detected": {
+                "title": "Genes Detected",
+                "description": "Genes Detected",
+                "scale": "",
+                "format": "{:,.0f}",
+            },"Estimated UMIs from Genomic DNA": {
+                "title": "Estimated UMIs from Genomic DNA",
+                "description": "Estimated UMIs from Genomic DNA",
+                "scale": "",
+                "format": "{:,.0f}",
+            },"Fraction Reads in Squares Under Tissue": {
+                "title": "Fraction Reads in Squares Under Tissue",
+                "description": "Fraction Reads in Squares Under Tissue",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Mean Genes Under Tissue per Square 2 µm": {
+                "title": "Mean Genes Under Tissue per Square 2 µm",
+                "description": "Mean Genes Under Tissue per Square 2 µm",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Mean Genes Under Tissue per Bin 8 µm": {
+                "title": "Mean Genes Under Tissue per Bin 8 µm",
+                "description": "Mean Genes Under Tissue per Bin 8 µm",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Mean Genes Under Tissue per Bin 16 µm": {
+                "title": "Mean Genes Under Tissue per Bin 16 µm",
+                "description": "Mean Genes Under Tissue per Bin 16 µm",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Median Genes per Cell": {
+                "title": "Median Genes per Cell",
+                "description": "Median Genes per Cell",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+             "Number of Spots Under Tissue": {
+                "title": "Number of Spots Under Tissue",
+                "description": "Number of Spots Under Tissue",
+                "scale": "YlOrRd",
+                "format": "{:,.2f}",
+            },
+            "Median Genes per Spot": {
+                "title": "Median Genes per Spot",
+                "description": "Median Genes per Spot",
+                "scale": "YlOrRd",
+                "format": "{:,.2f}",
+            },
+        }
+        return table.plot(data_by_sample,headers,pconfig=TableConfig(id="Space Ranger table",title="Space Ranger table: Data Quality"))
