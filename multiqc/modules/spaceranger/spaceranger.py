@@ -78,6 +78,9 @@ class MultiqcModule(BaseMultiqcModule):
                                     ))
         )
             
+    
+    
+    
     def parse_spaceranger_metrics(self, f):
         """Parse Space Ranger metrics_summary.csv file"""
         lines = f["f"].read().splitlines()
@@ -169,70 +172,57 @@ class MultiqcModule(BaseMultiqcModule):
             "Number of Reads": {
                 "title": "Number of Reads",
                 "description": "Total number of reads sequenced",
-                "scale": "YlOrRd",
+                "scale": "",
                 "format": "{:,.0f}",
             },
              "Reads Mapped to Probe Set": {
                 "title": "Reads Mapped to Probe Set",
                 "description": "Reads Mapped to Probe Set",
-                "scale": "YlOrRd",
+                "scale": "",
+                "format": "{:,.2f}",
             },
              "Number of Genes": {
                 "title": "Number of Genes",
                 "description": "Number of Genes",
-                "scale": "YlOrRd",
+                "scale": "",
+                "format": "{:,.0f}",
             },
              "Estimated UMIs from Genomic DNA": {
                 "title": "Estimated UMIs from Genomic DNA",
                 "description": "Estimated UMIs from Genomic DNA",
-                "scale": "YlOrRd",
+                "scale": "",
                 "format": "{:,.0f}",
             },
-            }
+            "Reads in Squares Under Tissue": {
+                "title": "Reads in Squares Under Tissue",
+                "description": "Reads in Squares Under Tissue",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Mean Genes Under Tissue per Square 2 µm": {
+                "title": "Mean Genes Under Tissue per Square 2 µm",
+                "description": "Mean Genes Under Tissue per Square 2 µm",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Mean Genes Under Tissue per Bin 8 µm": {
+                "title": "Mean Genes Under Tissue per Bin 8 µm",
+                "description": "Mean Genes Under Tissue per Bin 8 µm",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Mean Genes Under Tissue per Bin 16 µm": {
+                "title": "Mean Genes Under Tissue per Bin 16 µm",
+                "description": "Mean Genes Under Tissue per Bin 16 µm",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Median Genes per Cell": {
+                "title": "Median Genes per Cell",
+                "description": "Median Genes per Cell",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+        }
+        
         self.general_stats_addcols(data_by_sample, headers)
-"""            ,
-            "fraction_transcripts_assigned": {
-                "title": "Transcripts Assigned",
-                "description": "Fraction of transcripts assigned to cells",
-                "suffix": "%",
-                "scale": "RdYlGn",
-                "modify": lambda x: x * 100.0,
-                "max": 100.0,
-            },
-            "median_genes_per_cell": {
-                "title": "Genes/Cell",
-                "description": "Median number of genes per cell",
-                "scale": "Purples",
-                "format": "{:,.0f}",
-            },
-            "fraction_transcripts_decoded_q20": {
-                "title": "Q20+ Transcripts",
-                "description": "Fraction of transcripts decoded with Q20+",
-                "suffix": "%",
-                "scale": "Greens",
-                "modify": lambda x: x * 100.0,
-                "max": 100.0,
-            },
-            "cell_area_median": {
-                "title": "Median Cell",
-                "description": "Median cell area",
-                "suffix": " μm²",
-                "scale": "Blues",
-                "format": "{:,.1f}",
-                "shared_key": "xenium_cell_area",
-            },
-            "nucleus_area_median": {
-                "title": "Median Nucleus",
-                "description": "Median nucleus area",
-                "suffix": " μm²",
-                "scale": "Oranges",
-                "format": "{:,.1f}",
-                "shared_key": "xenium_cell_area",
-            },
-            "nucleus_to_cell_area_ratio_median": {
-                "title": "Nucleus/Cell",
-                "description": "Median nucleus to cell area ratio",
-                "scale": "Greens",
-                "format": "{:.3f}",
-                "max": 1.0,
-            }, """
