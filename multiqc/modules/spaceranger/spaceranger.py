@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 class MultiqcModule(BaseMultiqcModule):
     """
-   
+    h/t: https://github.com/MultiQC/MultiQC/blob/main/multiqc/modules/xenium/xenium.py
     """
 
     def __init__(self):
