@@ -1,5 +1,9 @@
 import logging
 import pandas as pd
+from collections import defaultdict
+import json
+
+
 
 from multiqc.base_module import BaseMultiqcModule, ModuleNoSamplesFound
 from multiqc.plots import bargraph, box, linegraph, scatter, table
@@ -24,13 +28,24 @@ class MultiqcModule(BaseMultiqcModule):
         )
 
         data_by_sample = {}
-        for f in self.find_log_files("spaceranger", filehandles=True):
+        for f in self.find_log_files("spaceranger/metrics", filehandles=True):
             parsed_data = self.parse_spaceranger_metrics(f)
             if parsed_data:
                 sample_name = parsed_data["Sample ID"]
                 data_by_sample[sample_name] = parsed_data
                 self.add_data_source(f, sample_name)
-        
+
+        #data_by_sample2 = {}
+        for f2 in self.find_log_files("spaceranger/count_html", filehandles=True):
+            parsed_data_count = self.parse_count_html(f2)
+            if parsed_data_count:
+                sample_name = parsed_data_count["Sample ID"]
+                try:
+                    data_by_sample[sample_name] = {**data_by_sample[sample_name], **parsed_data_count}
+                except:
+                    data_by_sample[sample_name] = parsed_data_count
+                self.add_data_source(f2, sample_name)
+
         data_by_sample = self.ignore_samples(data_by_sample)
         log.info(f"Found {len(data_by_sample)} Space Ranger reports")
         self.write_data_file(data_by_sample, "multiqc_spaceranger")
@@ -75,6 +90,139 @@ class MultiqcModule(BaseMultiqcModule):
             }
         return(bargraph.plot(data_by_sample, genes_detected, config))
     
+    def parse_count_html(self, f):
+        """
+        Space Ranger count report parser
+        """
+
+        general_stats_data: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict()
+        summary_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict()
+        warnings_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict(lambda: defaultdict())
+
+
+        warnings_headers: Dict = dict()
+        summary_headers: Dict[str, Dict[str, Union[str, float, int, None]]] = {
+            "reads": {
+                "rid": "count_data_reads",
+                "title": "Reads",
+                "description": "Number of reads",
+                "shared_key": "read_count",
+            }
+        }
+        # general_stats_headers: Dict[str, Dict[str, Union[str, float, int, None]]] = {
+        #     "reads": {
+        #         "rid": "count_genstats_reads",
+        #         "title": "Reads",
+        #         "description": "Number of reads",
+        #         "shared_key": "read_count",
+        #         "namespace": "Space Ranger Count",
+        #     }
+        # }
+
+        summary = None
+        for line in f["f"]:
+            line = line.strip()
+            if line.startswith("const data"):
+                line = line.replace("const data = ", "")
+                summary = json.loads(line)
+                if 'summary' in summary.keys():
+                    summary = summary["summary"]
+                break
+
+        if summary is None:
+            logging.error(f"Couldn't find JSON summary data in HTML report, skipping: {f['fn']}")
+            #continue
+
+        sample_name = self.clean_s_name(summary["sample"]["id"], f)
+        if sample_name in general_stats_data:
+            log.debug(f"Duplicate sample name found in {f['fn']}! Overwriting: {sample_name}")
+
+        if 'summary_tab' in summary.keys():
+            software = next(
+                iter(x[1] for x in summary["summary_tab"]["pipeline_info_table"]["rows"] if x[0] == "Pipeline Version")
+            )
+
+        if 'tabs' in summary.keys():
+            software = next(
+                iter(x[1] for x in summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows'] if x[0] == "Pipeline Version")
+            )
+        
+        software_name, software_version = software.split("-")
+        self.add_software_version(version=software_version, sample=sample_name, software_name=software_name)
+
+        # List of data collated from different tables in cellranger reports.
+        # This is a list of Tuples (metric name, value)
+
+        if 'summary_tab' in summary.keys():
+            data_rows = (
+                summary['summary_tab']['pipeline_info_table']['rows']
+                #+ summary["summary_tab"]["cells"]["table"]["rows"]
+                #+ summary["summary_tab"]["sequencing"]["table"]["rows"]
+                #+ summary["summary_tab"]["mapping"]["table"]["rows"]
+            )
+        #     # This is only contained in spaceranger reports for analyses with probe sets
+        #     try:
+        #         data_rows.extend(summary["analysis_tab"]["gdna"]["gems"]["table"]["rows"])
+        #     except KeyError as e:
+        #         fname = os.path.join(f["root"], f["fn"])
+        #         log.debug(
+        #             f"Could not parse the expected DNA table in the spaceranger report: {fname}: '{e}' field is missing"
+        #         )
+
+        if 'tabs' in summary.keys():
+            data_rows = ( 
+                    summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows']
+                    #+ summary['tabs']['tab_data'][3]['segmentation_metrics_table']['card']['inner']['rows']
+                    #+ summary['tabs']['tab_data'][2]['bin_metrics']['card']['inner']['rows']
+                    #+ summary['tabs']['tab_data'][0]['top']['left']['sequencing_metrics']['inner']['rows']
+                    #+ summary['tabs']['tab_data'][0]['top']['left']['mapping_metrics']['inner']['rows']
+                )
+        #         # This is only contained in spaceranger reports for analyses with probe sets
+        #     try:
+        #         data_rows.extend(summary['tabs']['tab_data'][0]['genomic_dna']['card']['inner']['table']['rows'])
+        #     except KeyError as e:
+        #         fname = os.path.join(f["root"], f["fn"])
+        #         log.debug(
+        #             f"Could not parse the expected DNA table in the spaceranger report: {fname}: '{e}' field is missing"
+        #             )
+
+
+        # Extract warnings if any
+        alarms_list = summary["alarms"].get("alarms", [])
+        for alarm in alarms_list:
+            # "Intron mode used" alarm added in Space Ranger 7.0 lacks id
+            if "id" not in alarm:
+                continue
+            warnings_data_by_sample[sample_name][alarm["id"]] = "FAIL"
+            warnings_headers[alarm["id"]] = {
+                "title": alarm["id"].replace("_", " ").title(),
+                "description": alarm["title"],
+                "bgcols": {"FAIL": "#f7dddc"},
+            }
+        
+        #self.general_stats_addcols(general_stats_data, general_stats_headers)
+
+        if len(warnings_data_by_sample) > 0:
+            self.add_section(
+                name="Count - Warnings",
+                anchor="spaceranger-count-warnings-section",
+                description="Warnings encountered during the analysis",
+                plot=table.plot(
+                    warnings_data_by_sample,
+                    warnings_headers,
+                    {
+                        "namespace": "Space Ranger Count",
+                        "id": "spaceranger-count-warnings",
+                        "title": "Space Ranger: Count: Warnings",
+                    },
+                ),
+            )
+
+        # Convert list of tuples to dict to match the csv metrics
+        html_dict = dict(zip([item[0] for item in data_rows], [item[1] for item in data_rows]))
+
+        return html_dict
+
     
     
     def add_gene_number_plot(self, data_by_sample):
@@ -212,6 +360,12 @@ class MultiqcModule(BaseMultiqcModule):
     def spaceranger_general_stats_table(self, data_by_sample):
         """Add key Xenium metrics to the general statistics table"""
         headers: Dict[str, Dict[str, Any]] = {
+            "Transcriptome": {
+                "title": "Transcriptome",
+                "description": "Transcriptome",
+                "scale": "Blues",
+                "format": "{:,.0f}",
+            },
             "Number of Reads": {
                 "title": "Number of Reads",
                 "description": "Total number of reads sequenced",
