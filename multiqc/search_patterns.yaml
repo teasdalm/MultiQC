@@ -976,6 +976,9 @@ spaceranger/metrics:
   fn: "*_metrics_summary.csv"
 spaceranger/count_html:
   - fn: "*.html"
+    contents: '"subcommand": "count", "command": "Space Ranger"'
+    num_lines: 20
+  - fn: "*.html"
     contents: '"command":"Space Ranger","subcommand":"count"'
     num_lines: 20
   - fn: "*.html"
