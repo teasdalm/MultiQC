@@ -381,7 +381,7 @@ class MultiqcModule(BaseMultiqcModule):
 
     def spaceranger_general_stats_table(self, data_by_sample):
         """
-        Add key Xenium metrics to the general statistics table
+        Add key Visium metrics to the general statistics table
         """
         headers: Dict[str, Dict[str, Any]] = {
             "Transcriptome": {
