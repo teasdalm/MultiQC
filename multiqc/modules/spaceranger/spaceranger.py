@@ -63,9 +63,7 @@ class MultiqcModule(BaseMultiqcModule):
                     name="Sequencing Saturation",
                     anchor="Sequencing Saturation",
                     description="Plot of sequencing saturation",
-                    helptext=""",
-                    Plot of sequencing saturation
-                    """
+                    helptext="Plot of sequencing saturation",
                     plot=self.add_seq_sat_plot(data_by_sample))
  
         self.add_section(
@@ -382,7 +380,9 @@ class MultiqcModule(BaseMultiqcModule):
         return parsed_metrics
 
     def spaceranger_general_stats_table(self, data_by_sample):
-        """Add key Xenium metrics to the general statistics table"""
+        """
+        Add key Xenium metrics to the general statistics table
+        """
         headers: Dict[str, Dict[str, Any]] = {
             "Transcriptome": {
                 "title": "Transcriptome",
