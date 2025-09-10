@@ -63,9 +63,7 @@ class MultiqcModule(BaseMultiqcModule):
                     name="Sequencing Saturation",
                     anchor="Sequencing Saturation",
                     description="Plot of sequencing saturation",
-                    helptext="""
-                    Plot of sequencing saturation
-                    """,
+                    helptext="Plot of sequencing saturation",
                     plot=self.add_seq_sat_plot(data_by_sample))
  
         self.add_section(
@@ -87,7 +85,7 @@ class MultiqcModule(BaseMultiqcModule):
      
   
     def add_seq_sat_plot(self, data_by_sample):
-        config = {"ylab": "Sequencing Saturation (%)"}
+        config = {"ylab": "Sequencing Saturation (%)", "cpswitch": False}
         config["id"] = "Space Ranger Sequencing Saturation plot"
         config["title"] = "Space Ranger: Saturation plot"
         
@@ -230,7 +228,7 @@ class MultiqcModule(BaseMultiqcModule):
         return html_dict
       
     def add_gen_umi_plot(self, data_by_sample):
-        config = {"ylab": "Fraction Genomic UMIs (%)"}
+        config = {"ylab": "Fraction Genomic UMIs (%)", "cpswitch": False}
         
         config["id"] = "Space Ranger Genomic UMIs plot"
         config["title"] = "Space Ranger: Genomic UMIs"
@@ -389,8 +387,6 @@ class MultiqcModule(BaseMultiqcModule):
             "Transcriptome": {
                 "title": "Transcriptome",
                 "description": "Transcriptome",
-                "scale": "Blues",
-                "format": "{:,.0f}",
             },
             "Number of Reads": {
                 "title": "Number of Reads",
