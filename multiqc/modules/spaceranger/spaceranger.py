@@ -35,7 +35,6 @@ class MultiqcModule(BaseMultiqcModule):
                 data_by_sample[sample_name] = parsed_data
                 self.add_data_source(f, sample_name)
 
-        #data_by_sample2 = {}
         for f2 in self.find_log_files("spaceranger/count_html", filehandles=True):
             parsed_data_count = self.parse_count_html(f2)
             if parsed_data_count:
@@ -64,13 +63,21 @@ class MultiqcModule(BaseMultiqcModule):
                     name="Sequencing Saturation",
                     anchor="Sequencing Saturation",
                     description="Plot of sequencing saturation",
-                    helptext="""
+                    helptext=""",
                     Plot of sequencing saturation
-                    """,
-                    plot=self.add_set_sat_plot(data_by_sample))
+                    """
+                    plot=self.add_seq_sat_plot(data_by_sample))
  
         self.add_section(
-                    name="Genes detected",
+                    name="Genomic UMIs",
+                    anchor="Genomic UMIs",
+                    description="Plot of Genomic UMIs",
+                    helptext="""
+                    Plot of Genomic UMIs
+                    """,
+                    plot=self.add_gen_umi_plot(data_by_sample))
+
+        self.add_section(name="Genes detected",
                     anchor="Plot",
                     description="Plot of Genes detected in differing sized bins",
                     helptext="""
@@ -78,10 +85,9 @@ class MultiqcModule(BaseMultiqcModule):
                     """,
                     plot=self.add_gene_number_plot(data_by_sample))
      
-     
-    def add_set_sat_plot(self, data_by_sample):
+  
+    def add_seq_sat_plot(self, data_by_sample):
         config = {"ylab": "Sequencing Saturation (%)"}
-        
         config["id"] = "Space Ranger Sequencing Saturation plot"
         config["title"] = "Space Ranger: Saturation plot"
         
@@ -89,7 +95,7 @@ class MultiqcModule(BaseMultiqcModule):
             "Sequencing Saturation": {"color": "#f7a35c", "name": "Sequencing Saturation"}
             }
         return(bargraph.plot(data_by_sample, genes_detected, config))
-    
+
     def parse_count_html(self, f):
         """
         Space Ranger count report parser
@@ -222,7 +228,17 @@ class MultiqcModule(BaseMultiqcModule):
         html_dict = dict(zip([item[0] for item in data_rows], [item[1] for item in data_rows]))
 
         return html_dict
-
+      
+    def add_gen_umi_plot(self, data_by_sample):
+        config = {"ylab": "Fraction Genomic UMIs (%)"}
+        
+        config["id"] = "Space Ranger Genomic UMIs plot"
+        config["title"] = "Space Ranger: Genomic UMIs"
+        
+        genes_detected = {
+            "Estimated UMIs from Genomic DNA": {"color": "#320faf", "name": "Sequencing Saturation"}
+            }
+        return(bargraph.plot(data_by_sample, genes_detected, config))
     
     
     def add_gene_number_plot(self, data_by_sample):
@@ -326,8 +342,8 @@ class MultiqcModule(BaseMultiqcModule):
             'Reads Mapped Confidently to Transcriptome',
             'Reads Mapped Antisense to Gene',
             'Fraction Reads in Spots Under Tissue',
-            'Total Genes Detected'
-            # some Visium3'
+            'Total Genes Detected',
+            # some Visium3
             'Reads Mapped to Genome',
             'Reads Mapped Confidently to Genome',
             'Reads Mapped Confidently to Intergenic Regions',
@@ -352,9 +368,17 @@ class MultiqcModule(BaseMultiqcModule):
         for field in string_fields:
             if field in metrics:
                 parsed_metrics[field] = metrics[field]
-                
+
+        # covert some field to percent    
+        covert_to_percent = [
+            "Sequencing Saturation",
+            "Estimated UMIs from Genomic DNA"
+        ]
         
-        parsed_metrics["Sequencing Saturation"] = parsed_metrics["Sequencing Saturation"] * 100
+        if field in parsed_metrics and parsed_metrics[field] != "":
+            for field in covert_to_percent:
+                if field in parsed_metrics:
+                    parsed_metrics[field] = parsed_metrics[field] * 100
         return parsed_metrics
 
     def spaceranger_general_stats_table(self, data_by_sample):
@@ -372,22 +396,19 @@ class MultiqcModule(BaseMultiqcModule):
                 "scale": "Blues",
                 "format": "{:,.0f}",
             },
-             "Reads Mapped to Probe Set": {
+            "Reads Mapped to Probe Set": {
                 "title": "Reads Mapped to Probe Set",
                 "description": "Reads Mapped to Probe Set",
+                "modify": lambda x: x * 100.0,
                 "scale": "Purples",
-                "format": "{:,.2f}",
+                "format": "{:.2f}%",
             },
-             "Reads Mapped to Genome": {
+            "Reads Mapped to Genome": {
                 "title": "Reads Mapped to Genome",
                 "description": "Reads Mapped to Genome",
+                "modify": lambda x: x * 100.0,
                 "scale": "Purples",
-                "format": "{:,.2f}",
-             },"Genes Detected": {
-                "title": "Genes Detected",
-                "description": "Genes Detected",
-                "scale": "YlOrRd",
-                "format": "{:,.0f}",
+                "format": "{:.2f}%",
             },
             "Number of Spots Under Tissue": {
                 "title": "Number of Spots Under Tissue",
@@ -450,48 +471,60 @@ class MultiqcModule(BaseMultiqcModule):
             },"Reads Mapped to Probe Set": {
                 "title": "Reads Mapped to Probe Set",
                 "description": "Reads Mapped to Probe Set",
+                "modify": lambda x: x * 100.0,
                 "scale": "",
-                "format": "{:,.2f}",
+                "format": "{:.2f}%",
             },"Reads Mapped Confidently to Probe Set": {
                 "title": "Reads Mapped Confidently to Probe Set",
                 "description": "Reads Mapped Confidently to Probe Set",
+                "modify": lambda x: x * 100.0,
                 "scale": "",
-                "format": "{:,.2f}",
+                "format": "{:.2f}%",
             },"Reads Mapped Confidently to the Filtered Probe Set": {
                 "title": "Reads Mapped Confidently to the Filtered Probe Set",
                 "description": "Reads Mapped Confidently to the Filtered Probe Set",
                 "scale": "",
-                "format": "{:,.2f}",
+                "modify": lambda x: x * 100.0,
+                "format": "{:.2f}%",
             },"Reads Mapped to Genome": {
                 "title": "Reads Mapped to Genome",
                 "description": "Reads Mapped to Genome",
+                "modify": lambda x: x * 100.0,
                 "scale": "",
-                "format": "{:,.2f}",
+                "format": "{:.2f}%",
             },"Reads Mapped Confidently to Genome": {
                 "title": "Reads Mapped Confidently to Genome",
                 "description": "Reads Mapped Confidently to Genome",
                 "scale": "",
-                "format": "{:,.2f}",
+                "modify": lambda x: x * 100.0,
+                "format": "{:.2f}%",
             },"Reads Mapped Confidently to Exonic Regions": {
                 "title": "Reads Mapped Confidently to Exonic Regions",
                 "description": "Reads Mapped Confidently to Exonic Regions",
                 "scale": "",
-                "format": "{:,.2f}",
+                "modify": lambda x: x * 100.0,
+                "format": "{:.2f}%",
+            },"Total Genes Detected": {
+                "title": "Genes Detected (Genome)",
+                "description": "Genes Detected (Genome)",
+                "scale": "",
+                "format": "{:,.0f}",
             },"Genes Detected": {
-                "title": "Genes Detected",
-                "description": "Genes Detected",
+                "title": "Genes Detected (Probe Set)",
+                "description": "Genes Detected (Probe Set)",
                 "scale": "",
                 "format": "{:,.0f}",
             },"Estimated UMIs from Genomic DNA": {
                 "title": "Estimated UMIs from Genomic DNA",
                 "description": "Estimated UMIs from Genomic DNA",
                 "scale": "",
-                "format": "{:,.0f}",
+                "format": "{:.2f}%",
             },"Fraction Reads in Squares Under Tissue": {
                 "title": "Fraction Reads in Squares Under Tissue",
                 "description": "Fraction Reads in Squares Under Tissue",
                 "scale": "",
-                "format": "{:,.2f}",
+                "modify": lambda x: x * 100.0,
+                "format": "{:,.2f}%",
             },
             "Mean Genes Under Tissue per Square 2 µm": {
                 "title": "Mean Genes Under Tissue per Square 2 µm",
