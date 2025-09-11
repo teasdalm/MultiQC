@@ -90,36 +90,18 @@ class MultiqcModule(BaseMultiqcModule):
             }
         return(bargraph.plot(data_by_sample, genes_detected, config))
 
+
     def parse_count_html(self, f):
         """
         Space Ranger count report parser
         """
 
         general_stats_data: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict()
-        summary_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict()
         warnings_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict(lambda: defaultdict())
 
-
         warnings_headers: Dict = dict()
-        summary_headers: Dict[str, Dict[str, Union[str, float, int, None]]] = {
-            "reads": {
-                "rid": "count_data_reads",
-                "title": "Reads",
-                "description": "Number of reads",
-                "shared_key": "read_count",
-            }
-        }
-        # general_stats_headers: Dict[str, Dict[str, Union[str, float, int, None]]] = {
-        #     "reads": {
-        #         "rid": "count_genstats_reads",
-        #         "title": "Reads",
-        #         "description": "Number of reads",
-        #         "shared_key": "read_count",
-        #         "namespace": "Space Ranger Count",
-        #     }
-        # }
-
         summary = None
+
         for line in f["f"]:
             line = line.strip()
             if line.startswith("const data"):
@@ -131,9 +113,9 @@ class MultiqcModule(BaseMultiqcModule):
 
         if summary is None:
             logging.error(f"Couldn't find JSON summary data in HTML report, skipping: {f['fn']}")
-            #continue
 
         sample_name = self.clean_s_name(summary["sample"]["id"], f)
+
         if sample_name in general_stats_data:
             log.debug(f"Duplicate sample name found in {f['fn']}! Overwriting: {sample_name}")
 
@@ -156,36 +138,12 @@ class MultiqcModule(BaseMultiqcModule):
         if 'summary_tab' in summary.keys():
             data_rows = (
                 summary['summary_tab']['pipeline_info_table']['rows']
-                #+ summary["summary_tab"]["cells"]["table"]["rows"]
-                #+ summary["summary_tab"]["sequencing"]["table"]["rows"]
-                #+ summary["summary_tab"]["mapping"]["table"]["rows"]
             )
-        #     # This is only contained in spaceranger reports for analyses with probe sets
-        #     try:
-        #         data_rows.extend(summary["analysis_tab"]["gdna"]["gems"]["table"]["rows"])
-        #     except KeyError as e:
-        #         fname = os.path.join(f["root"], f["fn"])
-        #         log.debug(
-        #             f"Could not parse the expected DNA table in the spaceranger report: {fname}: '{e}' field is missing"
-        #         )
 
         if 'tabs' in summary.keys():
             data_rows = ( 
                     summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows']
-                    #+ summary['tabs']['tab_data'][3]['segmentation_metrics_table']['card']['inner']['rows']
-                    #+ summary['tabs']['tab_data'][2]['bin_metrics']['card']['inner']['rows']
-                    #+ summary['tabs']['tab_data'][0]['top']['left']['sequencing_metrics']['inner']['rows']
-                    #+ summary['tabs']['tab_data'][0]['top']['left']['mapping_metrics']['inner']['rows']
                 )
-        #         # This is only contained in spaceranger reports for analyses with probe sets
-        #     try:
-        #         data_rows.extend(summary['tabs']['tab_data'][0]['genomic_dna']['card']['inner']['table']['rows'])
-        #     except KeyError as e:
-        #         fname = os.path.join(f["root"], f["fn"])
-        #         log.debug(
-        #             f"Could not parse the expected DNA table in the spaceranger report: {fname}: '{e}' field is missing"
-        #             )
-
 
         # Extract warnings if any
         alarms_list = summary["alarms"].get("alarms", [])
@@ -222,7 +180,8 @@ class MultiqcModule(BaseMultiqcModule):
         html_dict = dict(zip([item[0] for item in data_rows], [item[1] for item in data_rows]))
 
         return html_dict
-      
+
+
     def add_gen_umi_plot(self, data_by_sample):
         config = {"ylab": "Fraction Genomic UMIs (%)", "cpswitch": False}
         
@@ -338,14 +297,13 @@ class MultiqcModule(BaseMultiqcModule):
             'Fraction Reads in Spots Under Tissue',
             'Total Genes Detected',
             # some Visium3
+            'Total Genes Detected',
             'Reads Mapped to Genome',
             'Reads Mapped Confidently to Genome',
             'Reads Mapped Confidently to Intergenic Regions',
             'Reads Mapped Confidently to Intronic Regions',
             'Reads Mapped Confidently to Exonic Regions'
         ]
-        # do duplicates even matter? idk
-        #numeric_fields = list(set(numeric_fields))
 
         parsed_metrics = {}
         for field in numeric_fields:
@@ -373,22 +331,24 @@ class MultiqcModule(BaseMultiqcModule):
             for field in covert_to_percent:
                 if field in parsed_metrics:
                     parsed_metrics[field] = parsed_metrics[field] * 100
+        
         return parsed_metrics
+
 
     def spaceranger_general_stats_table(self, data_by_sample):
         """
         Add key Visium metrics to the general statistics table
         """
         headers: Dict[str, Dict[str, Any]] = {
-            "Transcriptome": {
-                "title": "Transcriptome",
-                "description": "Transcriptome",
-            },
             "Number of Reads": {
                 "title": "Number of Reads",
                 "description": "Total number of reads sequenced",
                 "scale": "Blues",
                 "format": "{:,.0f}",
+            },
+            "Transcriptome": {
+                "title": "Transcriptome",
+                "description": "Transcriptome",
             },
             "Reads Mapped to Probe Set": {
                 "title": "Reads Mapped to Probe Set",
@@ -449,6 +409,7 @@ class MultiqcModule(BaseMultiqcModule):
         }
         
         self.general_stats_addcols(data_by_sample, headers)
+
 
     def spaceranger_transcript_table(self, data_by_sample):
         headers: Dict[str, Dict[str, Any]] = {
