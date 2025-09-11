@@ -159,7 +159,6 @@ class MultiqcModule(BaseMultiqcModule):
             }
         
         #self.general_stats_addcols(general_stats_data, general_stats_headers)
-
         if len(warnings_data_by_sample) > 0:
             self.add_section(
                 name="Count - Warnings",
