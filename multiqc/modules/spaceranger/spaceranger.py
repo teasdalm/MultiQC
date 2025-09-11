@@ -1,14 +1,9 @@
 import logging
-import pandas as pd
 from collections import defaultdict
 import json
-
-
-
 from multiqc.base_module import BaseMultiqcModule, ModuleNoSamplesFound
-from multiqc.plots import bargraph, box, linegraph, scatter, table
-from multiqc.plots.table_object import ColumnDict, TableConfig
-from multiqc.utils import mqc_colour
+from multiqc.plots import bargraph, table
+from multiqc.plots.table_object import TableConfig
 
 
 log = logging.getLogger(__name__)
