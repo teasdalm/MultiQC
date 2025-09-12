@@ -8,7 +8,6 @@ from multiqc.plots.table_object import TableConfig
 
 log = logging.getLogger(__name__)
 
-
 class MultiqcModule(BaseMultiqcModule):
     """
     h/t: https://github.com/MultiQC/MultiQC/blob/main/multiqc/modules/xenium/xenium.py
@@ -38,6 +37,7 @@ class MultiqcModule(BaseMultiqcModule):
                 try:
                     data_by_sample[sample_name] = {**data_by_sample[sample_name], **parsed_data_count}
                 except KeyError:
+                    log.info(f"Warning: Sample {sample_name} does not seem to have a CSV file, pulling data from the HTML file instead.")
                     data_by_sample[sample_name] = parsed_data_count
                 self.add_data_source(f2, sample_name)
 
@@ -59,7 +59,9 @@ class MultiqcModule(BaseMultiqcModule):
                     name="Sequencing Saturation",
                     anchor="Sequencing Saturation",
                     description="Plot of sequencing saturation",
-                    helptext="Plot of sequencing saturation",
+                    helptext="""
+                    Plot of sequencing saturation
+                    """,
                     plot=self.add_seq_sat_plot(data_by_sample))
  
         self.add_section(
@@ -91,92 +93,6 @@ class MultiqcModule(BaseMultiqcModule):
         return(bargraph.plot(data_by_sample, genes_detected, config))
 
 
-    def parse_count_html(self, f):
-        """
-        Space Ranger count report parser
-        """
-
-        warnings_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict(lambda: defaultdict())
-
-        warnings_headers: Dict = dict()
-        summary = None
-
-        for line in f["f"]:
-            line = line.strip()
-            if line.startswith("const data"):
-                line = line.replace("const data = ", "")
-                summary = json.loads(line)
-                if 'summary' in summary.keys():
-                    summary = summary["summary"]
-                break
-
-        if summary is None:
-            logging.error(f"Couldn't find JSON summary data in HTML report, skipping: {f['fn']}")
-
-        sample_name = self.clean_s_name(summary["sample"]["id"], f)
-
-        # List of data collated from different tables in cellranger reports.
-        # This is a list of Tuples (metric name, value)
-
-        # For spacreanger 1 & 2:
-        if 'summary_tab' in summary.keys():
-            software = next(
-                iter(x[1] for x in summary["summary_tab"]["pipeline_info_table"]["rows"] if x[0] == "Pipeline Version")
-            )
-
-            data_rows = (
-                summary['summary_tab']['pipeline_info_table']['rows']
-            )
-
-        # For spaceranger 3 & 4:
-        if 'tabs' in summary.keys():
-            software = next(
-                iter(x[1] for x in summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows'] if x[0] == "Pipeline Version")
-            )
-
-            data_rows = ( 
-                    summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows']
-                )
-            
-        
-        software_name, software_version = software.split("-")
-        self.add_software_version(version=software_version, sample=sample_name, software_name=software_name)
-
-        # Extract warnings if any
-        alarms_list = summary["alarms"].get("alarms", [])
-        for alarm in alarms_list:
-            # "Intron mode used" alarm added in Space Ranger 7.0 lacks id
-            if "id" not in alarm:
-                continue
-            warnings_data_by_sample[sample_name][alarm["id"]] = "FAIL"
-            warnings_headers[alarm["id"]] = {
-                "title": alarm["id"].replace("_", " ").title(),
-                "description": alarm["title"],
-                "bgcols": {"FAIL": "#f7dddc"},
-            }
-        
-        if len(warnings_data_by_sample) > 0:
-            self.add_section(
-                name="Count - Warnings",
-                anchor="spaceranger-count-warnings-section",
-                description="Warnings encountered during the analysis",
-                plot=table.plot(
-                    warnings_data_by_sample,
-                    warnings_headers,
-                    {
-                        "namespace": "Space Ranger Count",
-                        "id": "spaceranger-count-warnings",
-                        "title": "Space Ranger: Count: Warnings",
-                    },
-                ),
-            )
-
-        # Convert list of tuples to dict to match the csv metrics
-        html_dict = dict(zip([item[0] for item in data_rows], [item[1] for item in data_rows]))
-
-        return html_dict
-
-
     def add_gen_umi_plot(self, data_by_sample):
         config = {"ylab": "Fraction Genomic UMIs (%)", "cpswitch": False}
         
@@ -184,15 +100,15 @@ class MultiqcModule(BaseMultiqcModule):
         config["title"] = "Space Ranger: Genomic UMIs"
         
         genes_detected = {
-            "Estimated UMIs from Genomic DNA": {"color": "#320faf", "name": "Sequencing Saturation"}
+            "Estimated UMIs from Genomic DNA": {"color": "#320faf", "name": "Estimated UMIs from Genomic DNA"}
             }
         return(bargraph.plot(data_by_sample, genes_detected, config))
     
     
     def add_gene_number_plot(self, data_by_sample):
-        config = {"ylab": "Genes detected by bin size"}
+        config = {"ylab": "Genes detected by bin size", "stacking": "group", "cpswitch": False}
         config["id"] = "Space Ranger: Genes detected by bin size"
-        config["title"] = "Space Ranger: Genes detected by bin size - beta"
+        config["title"] = "Space Ranger: Genes detected by bin size"
         genes_detected = {
             "Mean Genes Under Tissue per Square 2 µm": {"color": "#20568f", "name": "Mean Genes Under Tissue per Square 2 µm"},
             "Mean Genes Under Tissue per Bin 8 µm": {"color": "#f7a35c", "name": "Mean Genes Under Tissue per Bin 8 µm"},
@@ -270,7 +186,6 @@ class MultiqcModule(BaseMultiqcModule):
             "Maximum Nucleus Diameter (pixels)",
             # visium SD
             'Number of Spots Under Tissue',
-            'Number of Reads',
             'Mean Reads per Spot',
             'Mean Reads Under Tissue per Spot',
             'Fraction of Spots Under Tissue',
@@ -290,14 +205,7 @@ class MultiqcModule(BaseMultiqcModule):
             'Reads Mapped Confidently to Transcriptome',
             'Reads Mapped Antisense to Gene',
             'Fraction Reads in Spots Under Tissue',
-            'Total Genes Detected',
-            # some Visium3
-            'Total Genes Detected',
-            'Reads Mapped to Genome',
-            'Reads Mapped Confidently to Genome',
-            'Reads Mapped Confidently to Intergenic Regions',
-            'Reads Mapped Confidently to Intronic Regions',
-            'Reads Mapped Confidently to Exonic Regions'
+            'Total Genes Detected'
         ]
 
         parsed_metrics = {}
@@ -329,6 +237,185 @@ class MultiqcModule(BaseMultiqcModule):
         
         return parsed_metrics
 
+
+    def parse_count_html(self, f):
+        """
+        Space Ranger count report parser
+        """
+
+        warnings_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict(lambda: defaultdict())
+
+        warnings_headers: Dict = dict()
+        summary = None
+
+        for line in f["f"]:
+            line = line.strip()
+            if line.startswith("const data"):
+                line = line.replace("const data = ", "")
+                summary = json.loads(line)
+                if 'summary' in summary.keys():
+                    summary = summary["summary"]
+                break
+
+        if summary is None:
+            logging.error(f"Couldn't find JSON summary data in HTML report, skipping: {f['fn']}")
+
+        sample_name = self.clean_s_name(summary["sample"]["id"], f)
+
+        # List of data collated from different tables in cellranger reports.
+        # This is a list of Tuples (metric name, value)
+
+        # For spacreanger 1 & 2:
+        if 'summary_tab' in summary.keys():
+            software = next(
+                iter(x[1] for x in summary["summary_tab"]["pipeline_info_table"]["rows"] if x[0] == "Pipeline Version")
+            )
+
+            data_rows = (
+                summary['summary_tab']['pipeline_info_table']['rows']
+                + summary["summary_tab"]["cells"]["table"]["rows"]
+                + summary["summary_tab"]["sequencing"]["table"]["rows"]
+                + summary["summary_tab"]["mapping"]["table"]["rows"]
+            )
+
+        # For spaceranger 3 & 4:
+        if 'tabs' in summary.keys():
+            software = next(
+                iter(x[1] for x in summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows'] if x[0] == "Pipeline Version")
+            )
+
+            data_rows = ( 
+                    summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows']
+                    + summary['tabs']['tab_data'][3]['segmentation_metrics_table']['card']['inner']['rows']
+                    + summary['tabs']['tab_data'][2]['bin_metrics']['card']['inner']['rows']
+                    + summary['tabs']['tab_data'][0]['top']['left']['sequencing_metrics']['inner']['rows']
+                    + summary['tabs']['tab_data'][0]['top']['left']['mapping_metrics']['inner']['rows']
+                )
+            
+        
+        #log.info(f"Found {software} in Space Ranger reports")
+
+        software_name, software_version = software.split("-")
+        self.add_software_version(version=software_version, sample=sample_name, software_name=software_name)
+
+        # Extract warnings if any
+        alarms_list = summary["alarms"].get("alarms", [])
+        for alarm in alarms_list:
+            # "Intron mode used" alarm added in Space Ranger 7.0 lacks id
+            if "id" not in alarm:
+                continue
+            warnings_data_by_sample[sample_name][alarm["id"]] = "FAIL"
+            warnings_headers[alarm["id"]] = {
+                "title": alarm["id"].replace("_", " ").title(),
+                "description": alarm["title"],
+                "bgcols": {"FAIL": "#f7dddc"},
+            }
+        
+        if len(warnings_data_by_sample) > 0:
+            self.add_section(
+                name="Count - Warnings",
+                anchor="spaceranger-count-warnings-section",
+                description="Warnings encountered during the analysis",
+                plot=table.plot(
+                    warnings_data_by_sample,
+                    warnings_headers,
+                    {
+                        "namespace": "Space Ranger Count",
+                        "id": "spaceranger-count-warnings",
+                        "title": "Space Ranger: Count: Warnings",
+                    },
+                ),
+            )
+
+        # Convert list of tuples to dict to match the csv metrics
+        html_dict = dict(zip([item[0] for item in data_rows], [item[1] for item in data_rows]))
+
+        numeric_fields = [
+            # visium hd
+            "Number of Reads",
+            "Valid Barcodes",
+            "Valid UMI Sequences",	
+            "Sequencing Saturation", 
+            "Q30 Bases in Barcode",
+            "Q30 Bases in Probe Read",
+            "Q30 Bases in UMI",
+            "Reads Mapped to Probe Set",
+            "Reads Mapped Confidently to Probe Set",
+            "Fraction Reads in Squares Under Tissue",
+            "Genes Detected",
+            "Reads Mapped Confidently to the Filtered Probe Set",
+            "Number of Genes", 
+            "Reads Half-Mapped to Probe Set",
+            "Reads Split-Mapped to Probe Set",
+            "Estimated UMIs from Genomic DNA",
+            "Estimated UMIs from Genomic DNA per Unspliced Probe",
+            "Number of Squares Under Tissue 2 µm",
+            "Mean Reads Under Tissue per Square 2 µm",	
+            "Fraction of Squares Under Tissue 2 µm",
+            "Mean Genes Under Tissue per Square 2 µm",	
+            "Mean UMIs Under Tissue per Square 2 µm",
+            "Total Genes Detected Under Tissue 2 µm",
+            "Number of Bins Under Tissue 8 µm",
+            "Mean Reads Under Tissue per Bin 8 µm",	
+            "Fraction of Bins Under Tissue 8 µm",
+            "Mean Genes Under Tissue per Bin 8 µm",	
+            "Mean UMIs Under Tissue per Bin 8 µm",
+            "Total Genes Detected Under Tissue 8 µm",
+            "UMIs per sq mm of Tissue",
+            "Reads per sq mm of Tissue",
+            "Number of Bins Under Tissue 16 µm",
+            "Mean Reads Under Tissue per Bin 16 µm",
+            "Fraction of Bins Under Tissue 16 µm",
+            "Mean Genes Under Tissue per Bin 16 µm",
+            "Mean UMIs Under Tissue per Bin 16 µm",
+            "Total Genes Detected Under Tissue 16 µm",
+            "Number of Cells",
+            "Reads in Cells",
+            "UMIs in Cells",
+            "Mean Reads per Cell",
+            "Median Genes per Cell",
+            "Median UMIs per Cell",
+            "Median Cell Area (μm²)"
+            "Median Nucleus Area (μm²)",
+            "Maximum Nucleus Diameter (pixels)",
+            # visium SD
+            'Number of Spots Under Tissue',
+            'Number of Reads',
+            'Mean Reads per Spot',
+            'Mean Reads Under Tissue per Spot',
+            'Fraction of Spots Under Tissue',
+            'Median Genes per Spot',
+            'Median UMI Counts per Spot',
+            'Valid Barcodes',
+            'Valid UMIs',
+            'Sequencing Saturation',
+            'Q30 Bases in Barcode',
+            'Q30 Bases in RNA Read',
+            'Q30 Bases in UMI',
+            'Reads Mapped to Genome',
+            'Reads Mapped Confidently to Genome',
+            'Reads Mapped Confidently to Intergenic Regions',
+            'Reads Mapped Confidently to Intronic Regions',
+            'Reads Mapped Confidently to Exonic Regions',
+            'Reads Mapped Confidently to Transcriptome',
+            'Reads Mapped Antisense to Gene',
+            'Fraction Reads in Spots Under Tissue',
+            'Total Genes Detected'
+        ]
+
+        for field in numeric_fields:
+            if field in html_dict.keys() and isinstance(html_dict[field], str):
+                try:
+                    html_dict[field] = html_dict[field].replace(',', '').replace('%', '')
+                    html_dict[field] = float(html_dict[field])
+                except ValueError:
+                    log.warning(f"Could not convert {field}='{html_dict[field]}' to float")
+
+                if field.startswith('Reads Mapped'):
+                    html_dict[field] = html_dict[field] / 100
+
+
+        return html_dict
 
     def spaceranger_general_stats_table(self, data_by_sample):
         """
