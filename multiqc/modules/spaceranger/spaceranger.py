@@ -37,7 +37,7 @@ class MultiqcModule(BaseMultiqcModule):
                 sample_name = parsed_data_count["Sample ID"]
                 try:
                     data_by_sample[sample_name] = {**data_by_sample[sample_name], **parsed_data_count}
-                except:
+                except KeyError:
                     data_by_sample[sample_name] = parsed_data_count
                 self.add_data_source(f2, sample_name)
 
@@ -96,7 +96,6 @@ class MultiqcModule(BaseMultiqcModule):
         Space Ranger count report parser
         """
 
-        general_stats_data: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict()
         warnings_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict(lambda: defaultdict())
 
         warnings_headers: Dict = dict()
@@ -116,34 +115,32 @@ class MultiqcModule(BaseMultiqcModule):
 
         sample_name = self.clean_s_name(summary["sample"]["id"], f)
 
-        if sample_name in general_stats_data:
-            log.debug(f"Duplicate sample name found in {f['fn']}! Overwriting: {sample_name}")
+        # List of data collated from different tables in cellranger reports.
+        # This is a list of Tuples (metric name, value)
 
+        # For spacreanger 1 & 2:
         if 'summary_tab' in summary.keys():
             software = next(
                 iter(x[1] for x in summary["summary_tab"]["pipeline_info_table"]["rows"] if x[0] == "Pipeline Version")
             )
 
-        if 'tabs' in summary.keys():
-            software = next(
-                iter(x[1] for x in summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows'] if x[0] == "Pipeline Version")
-            )
-        
-        software_name, software_version = software.split("-")
-        self.add_software_version(version=software_version, sample=sample_name, software_name=software_name)
-
-        # List of data collated from different tables in cellranger reports.
-        # This is a list of Tuples (metric name, value)
-
-        if 'summary_tab' in summary.keys():
             data_rows = (
                 summary['summary_tab']['pipeline_info_table']['rows']
             )
 
+        # For spaceranger 3 & 4:
         if 'tabs' in summary.keys():
+            software = next(
+                iter(x[1] for x in summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows'] if x[0] == "Pipeline Version")
+            )
+
             data_rows = ( 
                     summary['tabs']['tab_data'][0]['run_summary']['card']['inner']['rows']
                 )
+            
+        
+        software_name, software_version = software.split("-")
+        self.add_software_version(version=software_version, sample=sample_name, software_name=software_name)
 
         # Extract warnings if any
         alarms_list = summary["alarms"].get("alarms", [])
@@ -158,7 +155,6 @@ class MultiqcModule(BaseMultiqcModule):
                 "bgcols": {"FAIL": "#f7dddc"},
             }
         
-        #self.general_stats_addcols(general_stats_data, general_stats_headers)
         if len(warnings_data_by_sample) > 0:
             self.add_section(
                 name="Count - Warnings",
