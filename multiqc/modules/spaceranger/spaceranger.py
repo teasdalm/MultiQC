@@ -23,22 +23,30 @@ class MultiqcModule(BaseMultiqcModule):
         )
 
         data_by_sample = {}
+        #data_by_sample_csv = {}
         for f in self.find_log_files("spaceranger/metrics", filehandles=True):
             parsed_data = self.parse_spaceranger_metrics(f)
             if parsed_data:
                 sample_name = parsed_data["Sample ID"]
+                if sample_name in data_by_sample.keys():
+                    log.critical(f'Sample name \'{sample_name}\' is shared across multiple metrics summary files in this run.')
                 data_by_sample[sample_name] = parsed_data
                 self.add_data_source(f, sample_name)
 
+        data_by_sample_html = {}
         for f2 in self.find_log_files("spaceranger/count_html", filehandles=True):
             parsed_data_count = self.parse_count_html(f2)
             if parsed_data_count:
                 sample_name = parsed_data_count["Sample ID"]
+                if sample_name in data_by_sample_html.keys():
+                    log.critical(f'Sample name \'{sample_name}\' is shared across multiple count html files in this run.')
+                data_by_sample_html[sample_name] = parsed_data_count
                 try:
-                    data_by_sample[sample_name] = {**data_by_sample[sample_name], **parsed_data_count}
+                    # This should have the CSV values overwrite the ones from the HTML file
+                    data_by_sample[sample_name] = {**data_by_sample_html[sample_name], **data_by_sample[sample_name]}
                 except KeyError:
-                    log.info(f"Warning: Sample {sample_name} does not seem to have a CSV file, pulling data from the HTML file instead.")
-                    data_by_sample[sample_name] = parsed_data_count
+                    log.warning(f"Sample {sample_name} does not seem to have a metrics summary file, pulling data from the HTML file instead.")
+                    data_by_sample[sample_name] = data_by_sample_html[sample_name]
                 self.add_data_source(f2, sample_name)
 
         data_by_sample = self.ignore_samples(data_by_sample)
