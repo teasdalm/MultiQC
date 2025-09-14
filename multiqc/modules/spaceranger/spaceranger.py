@@ -51,7 +51,6 @@ class MultiqcModule(BaseMultiqcModule):
         data_by_sample = self.ignore_samples(data_by_sample)
         log.info(f"Found {len(data_by_sample)} Space Ranger reports")
         self.write_data_file(data_by_sample, "multiqc_spaceranger")
-        log.info(f'{data_by_sample}')
         self.spaceranger_general_stats_table(data_by_sample)
         
         self.add_section(
@@ -312,10 +311,8 @@ class MultiqcModule(BaseMultiqcModule):
                 )
             
         
-        #log.info(f"Found {software} in Space Ranger reports")
 
         software_name, software_version = software.split("-")
-        log.info(f"{software} {software_name} {software_version} {sample_name}")
         self.add_software_version(version=software_version, sample=sample_name, software_name=software_name)
 
         # Extract warnings if any
