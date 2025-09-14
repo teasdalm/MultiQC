@@ -23,13 +23,12 @@ class MultiqcModule(BaseMultiqcModule):
         )
 
         data_by_sample = {}
-        #data_by_sample_csv = {}
         for f in self.find_log_files("spaceranger/metrics", filehandles=True):
             parsed_data = self.parse_spaceranger_metrics(f)
             if parsed_data:
                 sample_name = parsed_data["Sample ID"]
                 if sample_name in data_by_sample.keys():
-                    log.critical(f'Sample name \'{sample_name}\' is shared across multiple metrics summary files in this run.')
+                    log.critical(f'Sample name \'{sample_name}\' is shared across multiple metrics summary files in this run. Overwriting {sample_name}.')
                 data_by_sample[sample_name] = parsed_data
                 self.add_data_source(f, sample_name)
 
@@ -39,7 +38,7 @@ class MultiqcModule(BaseMultiqcModule):
             if parsed_data_count:
                 sample_name = parsed_data_count["Sample ID"]
                 if sample_name in data_by_sample_html.keys():
-                    log.critical(f'Sample name \'{sample_name}\' is shared across multiple count html files in this run.')
+                    log.critical(f'Sample name \'{sample_name}\' is shared across multiple count html files in this run. Overwriting {sample_name}.')
                 data_by_sample_html[sample_name] = parsed_data_count
                 try:
                     # This should have the CSV values overwrite the ones from the HTML file
@@ -52,6 +51,7 @@ class MultiqcModule(BaseMultiqcModule):
         data_by_sample = self.ignore_samples(data_by_sample)
         log.info(f"Found {len(data_by_sample)} Space Ranger reports")
         self.write_data_file(data_by_sample, "multiqc_spaceranger")
+        log.info(f'{data_by_sample}')
         self.spaceranger_general_stats_table(data_by_sample)
         
         self.add_section(
@@ -127,7 +127,12 @@ class MultiqcModule(BaseMultiqcModule):
     
        
     def parse_spaceranger_metrics(self, f):
-        """Parse Space Ranger metrics_summary.csv file"""
+        """
+        Parse Space Ranger metrics_summary.csv file
+        
+        Parses sample metrics from metrics_summary.csv file. Notably, for Visium HD this file contains 2µm metrics that are not present in the count HTML file.
+        
+        """
         lines = f["f"].read().splitlines()
         if len(lines) < 2:
             return {}
@@ -249,6 +254,12 @@ class MultiqcModule(BaseMultiqcModule):
     def parse_count_html(self, f):
         """
         Space Ranger count report parser
+
+        Used to parse additional metrics from Space Ranger count HTML reports. 
+        The count reports contain some information that cannot be recovered from the metrics summary CSV, such as transcriptome version and the pipeline version.
+        If the CSV is absent, all metrics will be pulled from the HTML file instead. 
+
+        This function is adapted from the spaceranger module present in the multiqc 1.31 release.
         """
 
         warnings_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict(lambda: defaultdict())
@@ -304,6 +315,7 @@ class MultiqcModule(BaseMultiqcModule):
         #log.info(f"Found {software} in Space Ranger reports")
 
         software_name, software_version = software.split("-")
+        log.info(f"{software} {software_name} {software_version} {sample_name}")
         self.add_software_version(version=software_version, sample=sample_name, software_name=software_name)
 
         # Extract warnings if any
@@ -411,19 +423,31 @@ class MultiqcModule(BaseMultiqcModule):
             'Total Genes Detected'
         ]
 
+        # Keep string fields
+        string_fields = [
+            "Sample ID", "Transcriptome", "Probe Set Name", "Slide Serial Number"
+        ]
+
+        parsed_metrics = {}
         for field in numeric_fields:
+            # Check for str prior to float conversion, stops excess error messages in log
             if field in html_dict.keys() and isinstance(html_dict[field], str):
                 try:
-                    html_dict[field] = html_dict[field].replace(',', '').replace('%', '')
-                    html_dict[field] = float(html_dict[field])
+                    # Remove commas and % from numbers in the HTML report
+                    parsed_metrics[field] = html_dict[field].replace(',', '').replace('%', '')
+                    parsed_metrics[field] = float(parsed_metrics[field])
                 except ValueError:
                     log.warning(f"Could not convert {field}='{html_dict[field]}' to float")
-
+                
+                # Correct format of HTML metrics to work with plots
                 if field.startswith('Reads Mapped'):
-                    html_dict[field] = html_dict[field] / 100
+                    parsed_metrics[field] = parsed_metrics[field] / 100
 
+        for field in string_fields:
+            if field in html_dict.keys():
+                parsed_metrics[field] = html_dict[field]
 
-        return html_dict
+        return parsed_metrics
 
     def spaceranger_general_stats_table(self, data_by_sample):
         """
@@ -453,6 +477,12 @@ class MultiqcModule(BaseMultiqcModule):
                 "modify": lambda x: x * 100.0,
                 "scale": "Purples",
                 "format": "{:.2f}%",
+            },
+            "Spots Under Tissue": {
+                "title": "Number of Spots Under Tissue",
+                "description": "Number of Spots Under Tissue",
+                "scale": "Greens",
+                "format": "{:,.2f}",
             },
             "Number of Spots Under Tissue": {
                 "title": "Number of Spots Under Tissue",
