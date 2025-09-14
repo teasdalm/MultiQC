@@ -10,8 +10,50 @@ log = logging.getLogger(__name__)
 
 class MultiqcModule(BaseMultiqcModule):
     """
+    This module parses output from the [Space Ranger pipeline]("https://www.10xgenomics.com/support/software/space-ranger/latest"). 
+    Space Ranger is a set of pipelines used to process 10X Visium data. This module parses both the metrics_summary.csv and web_summary.html 
+    files output from the Space Ranger pipeline in order to recover stats about a given analysis. This module supports output from Space Ranger
+    1.0.0 through 4.0.1.
+
+    Output from Space Ranger typically looks like this:
+    `
+    Outputs:
+    - Run summary HTML:                 /home/jdoe/runs/sample345/outs/web_summary.html
+    - Outputs of spatial pipeline:
+		aligned_fiducials:              /home/jdoe/runs/sample345/outs/spatial/aligned_fiducials.jpg
+		detected_tissue_image:          /home/jdoe/runs/sample345/outs/spatial/detected_tissue_image.jpg
+		scalefactors_json:              /home/jdoe/runs/sample345/outs/spatial/scalefactors_json.json
+		tissue_hires_image:             /home/jdoe/runs/sample345/outs/spatial/tissue_hires_image.png
+		tissue_lowres_image:            /home/jdoe/runs/sample345/outs/spatial/tissue_lowres_image.png
+		cytassist_image:                null
+		aligned_tissue_image:           null
+		tissue_positions:               /home/jdoe/runs/sample345/outs/spatial/tissue_positions.csv
+		spatial_enrichment:             /home/jdoe/runs/sample345/outs/spatial/spatial_enrichment.csv
+		barcode_fluorescence_intensity: null
+	- Run summary CSV:                                           /home/jdoe/runs/sample345/outs/metrics_summary.csv
+	- Correlation values between isotypes and Antibody features: null
+	- BAM:                                                       /home/jdoe/runs/sample345/outs/possorted_genome_bam.bam
+	- BAM BAI index:                                             /home/jdoe/runs/sample345/outs/possorted_genome_bam.bam.bai
+	- BAM CSI index:                                             null
+	- Filtered feature-barcode matrices MEX:                     /home/jdoe/runs/sample345/outs/filtered_feature_bc_matrix
+	- Filtered feature-barcode matrices HDF5:                    /home/jdoe/runs/sample345/outs/filtered_feature_bc_matrix.h5
+	- Unfiltered feature-barcode matrices MEX:                   /home/jdoe/runs/sample345/outs/raw_feature_bc_matrix
+	- Unfiltered feature-barcode matrices HDF5:                  /home/jdoe/runs/sample345/outs/raw_feature_bc_matrix.h5
+	- Secondary analysis output CSV:                             /home/jdoe/runs/sample345/outs/analysis
+	- Per-molecule read information:                             /home/jdoe/runs/sample345/outs/molecule_info.h5
+	- Loupe Browser file:                                        /home/jdoe/runs/sample345/outs/cloupe.cloupe
+	- Feature Reference:                                         null
+	- Target Panel file:                                         null
+	- Probe Set file:                                            null
+	Pipestance completed successfully!
+    `
+    Only a metrics summary file OR a web summary file is required. Both can be provided to recover more information about an analysis,
+    as these files potentially report different metrics (depending on the version of SpaceRanger/assay used). For example, in a 
+    Visium HD analysis metrics about 2µm bins are only provided in the metrics_summary.csv. This information is not available in 
+    the web summary.
+    
     h/t: https://github.com/MultiQC/MultiQC/blob/main/multiqc/modules/xenium/xenium.py
-    Todo
+    *Todo? Todone?
     """
 
     def __init__(self):
@@ -129,7 +171,9 @@ class MultiqcModule(BaseMultiqcModule):
         """
         Parse Space Ranger metrics_summary.csv file
         
-        Parses sample metrics from metrics_summary.csv file. Notably, for Visium HD this file contains 2µm metrics that are not present in the count HTML file.
+        Parses sample metrics from metrics_summary.csv file. Notably, for Visium HD this file contains 2µm metrics that are 
+        not present in the count HTML file. Also much easier to parse and probably won't change if 10X decide to restructure
+        their web reports. Probably.
         
         """
         lines = f["f"].read().splitlines()
@@ -146,8 +190,8 @@ class MultiqcModule(BaseMultiqcModule):
 
         # Create mapping of headers to values
         metrics = dict(zip(header, data_row))
-
-        # Convert numeric fields
+		
+        # Convert numeric fields - thoughts on moving this out of a function? it's copied verbatim in the count html parser.
         numeric_fields = [
             # visium hd
             "Number of Reads",
@@ -255,8 +299,9 @@ class MultiqcModule(BaseMultiqcModule):
         Space Ranger count report parser
 
         Used to parse additional metrics from Space Ranger count HTML reports. 
-        The count reports contain some information that cannot be recovered from the metrics summary CSV, such as transcriptome version and the pipeline version.
-        If the CSV is absent, all metrics will be pulled from the HTML file instead. 
+        The count reports contain some information that cannot be recovered from the metrics summary CSV, such as transcriptome version and 
+        the pipeline version. If the CSV is absent, all metrics will be pulled from the HTML file instead. Likely to break if 10X decide to 
+        redesign their web reports. Currently tested with SpaceRanger 1.0.0 to 4.0.1.
 
         This function is adapted from the spaceranger module present in the multiqc 1.31 release.
         """
@@ -311,7 +356,7 @@ class MultiqcModule(BaseMultiqcModule):
                 )
             
         
-
+		# Add software version to report.
         software_name, software_version = software.split("-")
         self.add_software_version(version=software_version, sample=sample_name, software_name=software_name)
 
@@ -347,6 +392,7 @@ class MultiqcModule(BaseMultiqcModule):
         # Convert list of tuples to dict to match the csv metrics
         html_dict = dict(zip([item[0] for item in data_rows], [item[1] for item in data_rows]))
 
+		# Possibly move out of function, just bad practice
         numeric_fields = [
             # visium hd
             "Number of Reads",
@@ -425,6 +471,7 @@ class MultiqcModule(BaseMultiqcModule):
             "Sample ID", "Transcriptome", "Probe Set Name", "Slide Serial Number"
         ]
 
+		# Could just update html_dict? 
         parsed_metrics = {}
         for field in numeric_fields:
             # Check for str prior to float conversion, stops excess error messages in log
