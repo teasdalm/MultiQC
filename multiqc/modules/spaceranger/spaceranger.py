@@ -476,7 +476,7 @@ class MultiqcModule(BaseMultiqcModule):
         ]
 
         # Keep string fields
-        string_fields = ["Sample ID", "Transcriptome", "Probe Set Name", "Slide Serial Number"]
+        string_fields = ["Sample ID", "Transcriptome", "Probe Set Name", "Slide Serial Number", "Chemistry"]
 
         parsed_metrics = {}
         for field in numeric_fields:
