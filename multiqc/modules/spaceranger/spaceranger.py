@@ -12,7 +12,7 @@ class MultiqcModule(BaseMultiqcModule):
     """
     This module parses output from the [Space Ranger pipeline]("https://www.10xgenomics.com/support/software/space-ranger/latest"). 
     Space Ranger is a set of pipelines used to process 10X Visium data. This module parses both the metrics_summary.csv and web_summary.html 
-    files output from the Space Ranger pipeline in order to recover stats about a given analysis. This module supports output from Space Ranger
+    files output from the Space Ranger pipeline in order to recover QC metrics about a given analysis. This module supports output from Space Ranger
     1.0.0 through 4.0.1.
 
     Output from Space Ranger typically looks like this:
@@ -48,7 +48,7 @@ class MultiqcModule(BaseMultiqcModule):
 	Pipestance completed successfully!
     `
     Only a metrics summary file OR a web summary file is required. Both can be provided to recover more information about an analysis,
-    as these files potentially report different metrics (depending on the version of SpaceRanger/assay used). For example, in a 
+    as these files potentially report different metrics (depending on the version of Space Ranger/assay used). For example, in a 
     Visium HD analysis metrics about 2µm bins are only provided in the metrics_summary.csv. This information is not available in 
     the web summary.
     
@@ -301,7 +301,7 @@ class MultiqcModule(BaseMultiqcModule):
         Used to parse additional metrics from Space Ranger count HTML reports. 
         The count reports contain some information that cannot be recovered from the metrics summary CSV, such as transcriptome version and 
         the pipeline version. If the CSV is absent, all metrics will be pulled from the HTML file instead. Likely to break if 10X decide to 
-        redesign their web reports. Currently tested with SpaceRanger 1.0.0 to 4.0.1.
+        redesign their web reports. Currently tested with Space Ranger 1.0.0 to 4.0.1.
 
         This function is adapted from the spaceranger module present in the multiqc 1.31 release.
         """
@@ -484,7 +484,7 @@ class MultiqcModule(BaseMultiqcModule):
                     log.warning(f"Could not convert {field}='{html_dict[field]}' to float")
                 
                 # Correct format of HTML metrics to work with plots
-                if field.startswith('Reads Mapped'):
+                if field.startswith('Reads Mapped') or field.startswith('Valid ') or field.startswith('Q30 '):
                     parsed_metrics[field] = parsed_metrics[field] / 100
 
         for field in string_fields:
@@ -504,9 +504,21 @@ class MultiqcModule(BaseMultiqcModule):
                 "scale": "Blues",
                 "format": "{:,.0f}",
             },
+            "Chemistry": {
+                "title": "Chemistry",
+                "description": "Chemistry",
+            },
+            "Slide Serial Number": {
+                "title": "Slide Serial Number",
+                "description": "Slide Serial Number",
+            },
             "Transcriptome": {
                 "title": "Transcriptome",
                 "description": "Transcriptome",
+            },
+            "Probe Set Name": {
+                "title": "Probe Set Name",
+                "description": "Probe Set Name",
             },
             "Reads Mapped to Probe Set": {
                 "title": "Reads Mapped to Probe Set",
@@ -521,12 +533,6 @@ class MultiqcModule(BaseMultiqcModule):
                 "modify": lambda x: x * 100.0,
                 "scale": "Purples",
                 "format": "{:.2f}%",
-            },
-            "Spots Under Tissue": {
-                "title": "Number of Spots Under Tissue",
-                "description": "Number of Spots Under Tissue",
-                "scale": "Greens",
-                "format": "{:,.2f}",
             },
             "Number of Spots Under Tissue": {
                 "title": "Number of Spots Under Tissue",
@@ -582,63 +588,122 @@ class MultiqcModule(BaseMultiqcModule):
                 "description": "Total number of reads sequenced",
                 "scale": "",
                 "format": "{:,.0f}",
-            },"Sequencing Saturation": {
+            },
+            "Sequencing Saturation": {
                 "title": "Sequencing Saturation",
                 "description": "Sequencing Saturation",
                 "scale": "",
                 "format": "{:.2f}%",
-            },"Reads Mapped to Probe Set": {
+            },
+            "Valid Barcodes": {
+                "title": "Valid Barcodes",
+                "description": "Valid Barcodes",
+                "scale": "",
+                "modify": lambda x: x * 100.0,
+                "format": "{:.2f}%",
+            },
+            "Valid UMIs": {
+                "title": "Valid UMIs",
+                "description": "Valid UMIs",
+                "scale": "",
+                "modify": lambda x: x * 100.0,
+                "format": "{:.2f}%",
+            },
+            "Reads Mapped to Probe Set": {
                 "title": "Reads Mapped to Probe Set",
                 "description": "Reads Mapped to Probe Set",
                 "modify": lambda x: x * 100.0,
                 "scale": "",
                 "format": "{:.2f}%",
-            },"Reads Mapped Confidently to Probe Set": {
+            },
+            "Reads Mapped Confidently to Probe Set": {
                 "title": "Reads Mapped Confidently to Probe Set",
                 "description": "Reads Mapped Confidently to Probe Set",
                 "modify": lambda x: x * 100.0,
                 "scale": "",
                 "format": "{:.2f}%",
-            },"Reads Mapped Confidently to the Filtered Probe Set": {
+            },
+            "Reads Mapped Confidently to the Filtered Probe Set": {
                 "title": "Reads Mapped Confidently to the Filtered Probe Set",
                 "description": "Reads Mapped Confidently to the Filtered Probe Set",
                 "scale": "",
                 "modify": lambda x: x * 100.0,
                 "format": "{:.2f}%",
-            },"Reads Mapped to Genome": {
+            },
+            "Reads Mapped to Genome": {
                 "title": "Reads Mapped to Genome",
                 "description": "Reads Mapped to Genome",
                 "modify": lambda x: x * 100.0,
                 "scale": "",
                 "format": "{:.2f}%",
-            },"Reads Mapped Confidently to Genome": {
+            },
+            "Reads Mapped Confidently to Genome": {
                 "title": "Reads Mapped Confidently to Genome",
                 "description": "Reads Mapped Confidently to Genome",
                 "scale": "",
                 "modify": lambda x: x * 100.0,
                 "format": "{:.2f}%",
-            },"Reads Mapped Confidently to Exonic Regions": {
+            },
+            "Reads Mapped Confidently to Exonic Regions": {
                 "title": "Reads Mapped Confidently to Exonic Regions",
                 "description": "Reads Mapped Confidently to Exonic Regions",
                 "scale": "",
                 "modify": lambda x: x * 100.0,
                 "format": "{:.2f}%",
-            },"Total Genes Detected": {
+            },
+            "Total Genes Detected": {
                 "title": "Genes Detected (Genome)",
                 "description": "Genes Detected (Genome)",
                 "scale": "",
                 "format": "{:,.0f}",
-            },"Genes Detected": {
+            },
+            "Genes Detected": {
                 "title": "Genes Detected (Probe Set)",
                 "description": "Genes Detected (Probe Set)",
                 "scale": "",
                 "format": "{:,.0f}",
-            },"Estimated UMIs from Genomic DNA": {
+            },
+            "Median Genes per Spot": {
+                "title": "Median Genes per Spot",
+                "description": "Median Genes per Spot",
+                "scale": "",
+                "format": "{:,.2f}",
+            },
+            "Q30 Bases in Barcode": {
+                "title": "Q30 Bases in Barcode",
+                "description": "Q30 Bases in Barcode",
+                "scale": "",
+                "modify": lambda x: x * 100.0,
+                "format": "{:,.2f}%",
+            },
+            "Q30 Bases in UMI": {
+                "title": "Q30 Bases in UMI",
+                "description": "Q30 Bases in UMI",
+                "scale": "",
+                "modify": lambda x: x * 100.0,
+                "format": "{:,.2f}%",
+            },
+            "Q30 Bases in RNA Read": {
+                "title": "Q30 Bases in RNA Read",
+                "description": "Q30 Bases in RNA Read",
+                "scale": "",
+                "modify": lambda x: x * 100.0,
+                "format": "{:,.2f}%",
+            },
+            "Q30 Bases in Probe Read": {
+                "title": "Q30 Bases in Probe Read",
+                "description": "Q30 Bases in Probe Read",
+                "scale": "",
+                "modify": lambda x: x * 100.0,
+                "format": "{:,.2f}%",
+            },
+            "Estimated UMIs from Genomic DNA": {
                 "title": "Estimated UMIs from Genomic DNA",
                 "description": "Estimated UMIs from Genomic DNA",
                 "scale": "",
                 "format": "{:.2f}%",
-            },"Fraction Reads in Squares Under Tissue": {
+            },
+            "Fraction Reads in Squares Under Tissue": {
                 "title": "Fraction Reads in Squares Under Tissue",
                 "description": "Fraction Reads in Squares Under Tissue",
                 "scale": "",
@@ -669,7 +734,13 @@ class MultiqcModule(BaseMultiqcModule):
                 "scale": "",
                 "format": "{:,.0f}",
             },
-             "Number of Spots Under Tissue": {
+            "Fraction Reads in Spots Under Tissue": {
+                "title": "Fraction Reads in Spots Under Tissue",
+                "description": "Fraction Reads in Spots Under Tissue",
+                "scale": "",
+                "format": "{:,.0f}",
+            },
+            "Number of Spots Under Tissue": {
                 "title": "Number of Spots Under Tissue",
                 "description": "Number of Spots Under Tissue",
                 "scale": "",
@@ -681,5 +752,6 @@ class MultiqcModule(BaseMultiqcModule):
                 "scale": "",
                 "format": "{:,.2f}",
             },
+            
         }
         return table.plot(data_by_sample,headers,pconfig=TableConfig(id="Space Ranger table",title="Space Ranger table: Data Quality"))
