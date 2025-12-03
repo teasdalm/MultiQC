@@ -381,7 +381,7 @@ class MultiqcModule(BaseMultiqcModule):
             warnings_headers[alarm["id"]] = {
                 "title": alarm["id"].replace("_", " ").title(),
                 "description": alarm["title"],
-                "bgcols": {"FAIL": "#f7dddc"},
+                "bgcols": {"FAIL": "#e5001336"},
             }
 
         if len(warnings_data_by_sample) > 0:
