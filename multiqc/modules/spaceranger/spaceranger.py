@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from typing import Any, Dict, Union
 import json
 from multiqc.base_module import BaseMultiqcModule, ModuleNoSamplesFound
 from multiqc.plots import bargraph, table
@@ -756,12 +757,6 @@ class MultiqcModule(BaseMultiqcModule):
                 "description": "Number of Spots Under Tissue",
                 "scale": "",
                 "format": "{:,.0f}",
-            },
-            "Median Genes per Spot": {
-                "title": "Median Genes per Spot",
-                "description": "Median Genes per Spot",
-                "scale": "",
-                "format": "{:,.2f}",
             },
         }
         return table.plot(
