@@ -104,7 +104,7 @@ class MultiqcModule(BaseMultiqcModule):
 
         self.add_section(
             name="Analysis results",
-            anchor="Table",
+            anchor="table",
             description="Summary Stats from Space Ranger run",
             helptext="""
                     Summary Stats from Space Ranger run
@@ -114,7 +114,7 @@ class MultiqcModule(BaseMultiqcModule):
 
         self.add_section(
             name="Sequencing Saturation",
-            anchor="Sequencing Saturation",
+            anchor="sequencing_saturation",
             description="Plot of sequencing saturation",
             helptext="""
                     Plot of sequencing saturation
@@ -124,7 +124,7 @@ class MultiqcModule(BaseMultiqcModule):
 
         self.add_section(
             name="Genomic UMIs",
-            anchor="Genomic UMIs",
+            anchor="Genomic_UMIs",
             description="Plot of Genomic UMIs",
             helptext="""
                     Plot of Genomic UMIs
@@ -134,7 +134,7 @@ class MultiqcModule(BaseMultiqcModule):
 
         self.add_section(
             name="Genes detected",
-            anchor="Plot",
+            anchor="plot",
             description="Plot of Genes detected in differing sized bins",
             helptext="""
                     Plot of Genes detected in differing sized bins
@@ -144,7 +144,7 @@ class MultiqcModule(BaseMultiqcModule):
 
     def add_seq_sat_plot(self, data_by_sample):
         config = {"ylab": "Sequencing Saturation (%)", "cpswitch": False}
-        config["id"] = "Space Ranger Sequencing Saturation plot"
+        config["id"] = "space_ranger_sequencing_saturation_plot"
         config["title"] = "Space Ranger: Saturation plot"
 
         genes_detected = {"Sequencing Saturation": {"color": "#f7a35c", "name": "Sequencing Saturation"}}
@@ -153,7 +153,7 @@ class MultiqcModule(BaseMultiqcModule):
     def add_gen_umi_plot(self, data_by_sample):
         config = {"ylab": "Fraction Genomic UMIs (%)", "cpswitch": False}
 
-        config["id"] = "Space Ranger Genomic UMIs plot"
+        config["id"] = "space_ranger_genomic_UMIs_plot"
         config["title"] = "Space Ranger: Genomic UMIs"
 
         genes_detected = {
@@ -163,18 +163,18 @@ class MultiqcModule(BaseMultiqcModule):
 
     def add_gene_number_plot(self, data_by_sample):
         config = {"ylab": "Genes detected by bin size", "stacking": "group", "cpswitch": False}
-        config["id"] = "Space Ranger: Genes detected by bin size"
+        config["id"] = "space_ranger_genes_detected_by_bin_size"
         config["title"] = "Space Ranger: Genes detected by bin size"
         genes_detected = {
-            "Mean Genes Under Tissue per Square 2 µm": {
+            "Mean_Genes_Under_Tissue_per_Square_2_um": {
                 "color": "#20568f",
                 "name": "Mean Genes Under Tissue per Square 2 µm",
             },
-            "Mean Genes Under Tissue per Bin 8 µm": {
+            "Mean_Genes_Under_Tissue_per_Bin_8_um": {
                 "color": "#f7a35c",
                 "name": "Mean Genes Under Tissue per Bin 8 µm",
             },
-            "Mean Genes Under Tissue per Bin 16 µm": {
+            "Mean_Genes_Under_Tissue_per_Bin_16_um": {
                 "color": "#981919",
                 "name": "Mean Genes Under Tissue per Bin 16 µm",
             },
@@ -767,5 +767,5 @@ class MultiqcModule(BaseMultiqcModule):
         return table.plot(
             data_by_sample,
             headers,
-            pconfig=TableConfig(id="Space Ranger table", title="Space Ranger table: Data Quality"),
+            pconfig=TableConfig(id="space_ranger_table", title="Space Ranger table: Data Quality"),
         )
