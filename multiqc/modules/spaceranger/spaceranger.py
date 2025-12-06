@@ -64,6 +64,7 @@ class MultiqcModule(BaseMultiqcModule):
             anchor="spaceranger",
             href=["https://www.10xgenomics.com/support/software/space-ranger/latest"],
             info="Space Ranger is a set of analysis pipelines that process 10x Genomics Visium data with brightfield or fluorescence microscope images, allowing users to map the whole transcriptome in a variety of tissues",
+            doi=[],
         )
 
         warnings_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict(lambda: defaultdict())
