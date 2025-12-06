@@ -66,7 +66,12 @@ class MultiqcModule(BaseMultiqcModule):
             info="Space Ranger is a set of analysis pipelines that process 10x Genomics Visium data with brightfield or fluorescence microscope images, allowing users to map the whole transcriptome in a variety of tissues",
         )
 
+        warnings_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict(lambda: defaultdict())
+
+        warnings_headers: Dict = dict()
+
         data_by_sample = {}
+        # warnings_data_by_sample = {}
         for f in self.find_log_files("spaceranger/metrics", filehandles=True):
             parsed_data = self.parse_spaceranger_metrics(f)
             if parsed_data:
@@ -79,8 +84,9 @@ class MultiqcModule(BaseMultiqcModule):
                 self.add_data_source(f, sample_name)
 
         data_by_sample_html = {}
+        warnings_sample_html = {}
         for f2 in self.find_log_files("spaceranger/count_html", filehandles=True):
-            parsed_data_count = self.parse_count_html(f2)
+            alarms_list, parsed_data_count = self.parse_count_html(f2)
             if parsed_data_count:
                 sample_name = parsed_data_count["Sample ID"]
                 if sample_name in data_by_sample_html.keys():
@@ -88,6 +94,7 @@ class MultiqcModule(BaseMultiqcModule):
                         f"Sample name '{sample_name}' is shared across multiple count html files in this run. Overwriting {sample_name}."
                     )
                 data_by_sample_html[sample_name] = parsed_data_count
+                warnings_sample_html[sample_name] = alarms_list
                 try:
                     # This should have the CSV values overwrite the ones from the HTML file
                     data_by_sample[sample_name] = {**data_by_sample_html[sample_name], **data_by_sample[sample_name]}
@@ -97,8 +104,19 @@ class MultiqcModule(BaseMultiqcModule):
                     )
                     data_by_sample[sample_name] = data_by_sample_html[sample_name]
                 self.add_data_source(f2, sample_name)
+            for alarm in alarms_list:
+                # "Intron mode used" alarm added in Space Ranger 7.0 lacks id
+                if "id" not in alarm:
+                    continue
+                warnings_data_by_sample[sample_name][alarm["id"]] = "FAIL"
+                warnings_headers[alarm["id"]] = {
+                    "title": alarm["id"].replace("_", " ").title(),
+                    "description": alarm["title"],
+                    "bgcols": {"FAIL": "#e5001336"},
+                }
 
         data_by_sample = self.ignore_samples(data_by_sample)
+        warnings_data_by_sample = self.ignore_samples(warnings_data_by_sample)
         log.info(f"Found {len(data_by_sample)} Space Ranger reports")
         self.write_data_file(data_by_sample, "multiqc_spaceranger")
         self.spaceranger_general_stats_table(data_by_sample)
@@ -142,6 +160,22 @@ class MultiqcModule(BaseMultiqcModule):
                     """,
             plot=self.add_gene_number_plot(data_by_sample),
         )
+
+        if len(warnings_data_by_sample) > 0:
+            self.add_section(
+                name="Count - Warnings",
+                anchor="spaceranger-count-warnings-section",
+                description="Warnings encountered during the analysis",
+                plot=table.plot(
+                    warnings_data_by_sample,
+                    warnings_headers,
+                    {
+                        "namespace": "Space Ranger Count",
+                        "id": "spaceranger-count-warnings",
+                        "title": "Space Ranger: Count: Warnings",
+                    },
+                ),
+            )
 
     def add_seq_sat_plot(self, data_by_sample):
         config = {"ylab": "Sequencing Saturation (%)", "cpswitch": False}
@@ -315,9 +349,6 @@ class MultiqcModule(BaseMultiqcModule):
         This function is adapted from the spaceranger module present in the multiqc 1.31 release.
         """
 
-        warnings_data_by_sample: Dict[str, Dict[str, Union[str, float, int, None]]] = defaultdict(lambda: defaultdict())
-
-        warnings_headers: Dict = dict()
         summary = None
 
         for line in f["f"]:
@@ -374,32 +405,6 @@ class MultiqcModule(BaseMultiqcModule):
 
         # Extract warnings if any
         alarms_list = summary["alarms"].get("alarms", [])
-        for alarm in alarms_list:
-            # "Intron mode used" alarm added in Space Ranger 7.0 lacks id
-            if "id" not in alarm:
-                continue
-            warnings_data_by_sample[sample_name][alarm["id"]] = "FAIL"
-            warnings_headers[alarm["id"]] = {
-                "title": alarm["id"].replace("_", " ").title(),
-                "description": alarm["title"],
-                "bgcols": {"FAIL": "#e5001336"},
-            }
-
-        if len(warnings_data_by_sample) > 0:
-            self.add_section(
-                name="Count - Warnings",
-                anchor="spaceranger-count-warnings-section",
-                description="Warnings encountered during the analysis",
-                plot=table.plot(
-                    warnings_data_by_sample,
-                    warnings_headers,
-                    {
-                        "namespace": "Space Ranger Count",
-                        "id": "spaceranger-count-warnings",
-                        "title": "Space Ranger: Count: Warnings",
-                    },
-                ),
-            )
 
         # Convert list of tuples to dict to match the csv metrics
         html_dict = dict(zip([item[0] for item in data_rows], [item[1] for item in data_rows]))
@@ -503,7 +508,7 @@ class MultiqcModule(BaseMultiqcModule):
             if field in html_dict.keys():
                 parsed_metrics[field] = html_dict[field]
 
-        return parsed_metrics
+        return alarms_list, parsed_metrics
 
     def spaceranger_general_stats_table(self, data_by_sample):
         """
