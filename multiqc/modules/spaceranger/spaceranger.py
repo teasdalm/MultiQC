@@ -569,19 +569,19 @@ class MultiqcModule(BaseMultiqcModule):
                 "scale": "Blues",
                 "format": "{:,.0f}",
             },
-            "Mean Genes Under Tissue per Square 2 µm": {
+            "Mean Genes Under Tissue per Square 2 um": {
                 "title": "Mean Genes Under Tissue per Square 2 µm",
                 "description": "Mean Genes Under Tissue per Square 2 µm",
                 "scale": "Greens",
                 "format": "{:,.0f}",
             },
-            "Mean Genes Under Tissue per Bin 8 µm": {
+            "Mean Genes Under Tissue per Bin 8 um": {
                 "title": "Mean Genes Under Tissue per Bin 8 µm",
                 "description": "Mean Genes Under Tissue per Bin 8 µm",
                 "scale": "Blues",
                 "format": "{:,.0f}",
             },
-            "Mean Genes Under Tissue per Bin 16 µm": {
+            "Mean Genes Under Tissue per Bin 16 um": {
                 "title": "Mean Genes Under Tissue per Bin 16 µm",
                 "description": "Mean Genes Under Tissue per Bin 16 µm",
                 "scale": "Greens",
@@ -726,19 +726,19 @@ class MultiqcModule(BaseMultiqcModule):
                 "modify": lambda x: x * 100.0,
                 "format": "{:,.2f}%",
             },
-            "Mean Genes Under Tissue per Square 2 µm": {
+            "Mean Genes Under Tissue per Square 2 um": {
                 "title": "Mean Genes Under Tissue per Square 2 µm",
                 "description": "Mean Genes Under Tissue per Square 2 µm",
                 "scale": "",
                 "format": "{:,.0f}",
             },
-            "Mean Genes Under Tissue per Bin 8 µm": {
+            "Mean Genes Under Tissue per Bin 8 um": {
                 "title": "Mean Genes Under Tissue per Bin 8 µm",
                 "description": "Mean Genes Under Tissue per Bin 8 µm",
                 "scale": "",
                 "format": "{:,.0f}",
             },
-            "Mean Genes Under Tissue per Bin 16 µm": {
+            "Mean Genes Under Tissue per Bin 16 um": {
                 "title": "Mean Genes Under Tissue per Bin 16 µm",
                 "description": "Mean Genes Under Tissue per Bin 16 µm",
                 "scale": "",
